@@ -1,0 +1,26 @@
+{
+  "window": {
+    "width": 900,
+    "height": 650,
+    "start_minimized": false,
+    "start_with_windows": true,
+    "minimize_to_tray": true,
+    "global_hotkey": "win+shift+l"
+  },
+  "theme": {
+    "mode": "dark",
+    "accent_color": "#6c5ce7"
+  },
+  "paths": {
+    "downloads_folder": "C:\\Users\\james\\Downloads",
+    "projects_root": "C:\\Users\\james",
+    "screenshots_folder": "C:\\Users\\james\\Documents\\Screenshots"
+  },
+  "external_tools": {
+    "ccleaner": "C:\\Program Files\\CCleaner\\CCleaner64.exe",
+    "wise_memory_cleaner": "C:\\Program Files (x86)\\Wise\\Wise Memory Optimizer\\WiseMemoryOptimizer.exe",
+    "cursor": "C:\\Users\\james\\AppData\\Local\\Programs\\cursor\\Cursor.exe",
+    "vscode": "C:\\Users\\james\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
+    "pycharm": "C:\\Program Files\\JetBrains\\PyCharm Community Edition 2023.3.2\\bin\\pycharm64.exe"
+  }
+}

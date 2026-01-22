@@ -1,0 +1,17 @@
+{
+  "patterns": {
+    "code_files": [".py", ".ts", ".tsx", ".js", ".jsx", ".ps1", ".bat", ".sh"],
+    "doc_files": [".md", ".txt", ".json", ".yaml", ".yml"],
+    "image_files": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
+    "archive_files": [".zip", ".tar", ".gz", ".7z", ".rar"]
+  },
+  "ignore_patterns": [
+    "python-*",
+    "node-*",
+    "*.exe",
+    "*.msi",
+    "*.msix"
+  ],
+  "screenshot_folder": "C:\\Users\\james\\Documents\\Screenshots",
+  "archive_folder": "C:\\Users\\james\\Documents\\Archives"
+}
