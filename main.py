@@ -1,66 +1,297 @@
+#!/usr/bin/env python3
 """
-Main Entry Point
-Launches the App Launcher application
+James's Project Launcher - Main Entry Point
+
+A Windows desktop application for managing and launching development projects,
+organizing downloads, and running system maintenance utilities.
+
+Usage:
+    python main.py              # Normal start
+    python main.py --minimized  # Start minimized to tray
+    pythonw main.py             # Start without console window
 """
 
 import sys
 import os
 import argparse
 import traceback
+from pathlib import Path
 
-# Add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Ensure the app directory is in the path
+APP_DIR = Path(__file__).parent.absolute()
+sys.path.insert(0, str(APP_DIR))
 
-# Try to import logger early
-try:
-    from src.utils.logger import logger
-except ImportError:
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.addHandler(logging.NullHandler())
+# Set working directory to app location
+os.chdir(APP_DIR)
+
+
+def setup_logging():
+    """Initialize the logging system."""
+    try:
+        from src.utils.logger import setup_logger, logger
+        setup_logger()
+        return logger
+    except ImportError:
+        # Fallback if logger module not available
+        import logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s | %(levelname)s | %(message)s'
+        )
+        return logging.getLogger(__name__)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
-    """Global exception handler"""
+    """
+    Global exception handler for uncaught exceptions.
+    Logs the error and shows a user-friendly message.
+    """
+    # Don't intercept keyboard interrupt
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     
+    # Log the exception
     logger.critical(
         "Uncaught exception",
         exc_info=(exc_type, exc_value, exc_traceback)
     )
     
-    # Show user-friendly error message
+    # Format error message
+    error_msg = str(exc_value) if exc_value else "Unknown error"
+    
+    # Try to show error dialog
     try:
-        import tkinter.messagebox as messagebox
+        import tkinter as tk
+        from tkinter import messagebox
+        
+        # Create hidden root for dialog
+        root = tk.Tk()
+        root.withdraw()
+        
         messagebox.showerror(
-            "Application Error",
-            f"An unexpected error occurred:\n\n{exc_value}\n\nCheck logs/app.log for details."
+            "App Launcher Error",
+            f"An unexpected error occurred:\n\n{error_msg}\n\n"
+            f"Please check logs/app.log for details."
         )
-    except:
-        pass
+        root.destroy()
+    except Exception:
+        # Fallback to console
+        print(f"\n[ERROR] {error_msg}")
+        print("Check logs/app.log for details.")
+
+
+def check_dependencies():
+    """
+    Check that required dependencies are installed.
+    Returns True if all dependencies are available.
+    """
+    missing = []
+    
+    required_packages = [
+        ('customtkinter', 'customtkinter'),
+        ('PIL', 'Pillow'),
+        ('pystray', 'pystray'),
+        ('keyboard', 'keyboard'),
+        ('git', 'GitPython'),
+    ]
+    
+    for import_name, package_name in required_packages:
+        try:
+            __import__(import_name)
+        except ImportError:
+            missing.append(package_name)
+    
+    if missing:
+        print("Missing required packages:")
+        for pkg in missing:
+            print(f"  - {pkg}")
+        print("\nInstall them with:")
+        print(f"  pip install {' '.join(missing)}")
+        return False
+    
+    return True
+
+
+def check_single_instance():
+    """
+    Check if another instance is already running.
+    Uses a lock file approach for Windows compatibility.
+    Returns True if this is the only instance.
+    """
+    import tempfile
+    import atexit
+    
+    lock_file = Path(tempfile.gettempdir()) / "james_project_launcher.lock"
+    
+    try:
+        # Try to create lock file exclusively
+        if lock_file.exists():
+            # Check if the process that created it is still running
+            try:
+                with open(lock_file, 'r') as f:
+                    old_pid = int(f.read().strip())
+                
+                # Check if process is still running (Windows)
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+                handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, old_pid)
+                
+                if handle:
+                    kernel32.CloseHandle(handle)
+                    # Process still running
+                    logger.warning(f"Another instance appears to be running (PID: {old_pid})")
+                    return False
+            except (ValueError, OSError, AttributeError):
+                # Can't read PID or check process, assume it's stale
+                pass
+        
+        # Create/update lock file with our PID
+        with open(lock_file, 'w') as f:
+            f.write(str(os.getpid()))
+        
+        # Register cleanup
+        def cleanup_lock():
+            try:
+                lock_file.unlink()
+            except Exception:
+                pass
+        
+        atexit.register(cleanup_lock)
+        return True
+        
+    except Exception as e:
+        logger.warning(f"Could not check for existing instance: {e}")
+        return True  # Allow running anyway
+
+
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="James's Project Launcher",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py              Start normally
+  python main.py --minimized  Start minimized to system tray
+  pythonw main.py             Start without console window
+
+Keyboard Shortcuts:
+  Win+Shift+L    Show/hide launcher (global hotkey)
+        """
+    )
+    
+    parser.add_argument(
+        '--minimized', '-m',
+        action='store_true',
+        help='Start with window hidden (tray icon only)'
+    )
+    
+    parser.add_argument(
+        '--debug', '-d',
+        action='store_true',
+        help='Enable debug logging to console'
+    )
+    
+    parser.add_argument(
+        '--reset-config',
+        action='store_true',
+        help='Reset configuration to defaults'
+    )
+    
+    parser.add_argument(
+        '--version', '-v',
+        action='version',
+        version='%(prog)s 2.0.0'
+    )
+    
+    return parser.parse_args()
+
+
+def ensure_directories():
+    """Ensure required directories exist."""
+    directories = [
+        APP_DIR / 'config',
+        APP_DIR / 'logs',
+        APP_DIR / 'assets' / 'icons',
+    ]
+    
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
+
+
+def reset_configuration():
+    """Reset configuration files to defaults."""
+    config_dir = APP_DIR / 'config'
+    
+    # Backup existing configs
+    backup_dir = config_dir / 'backup'
+    backup_dir.mkdir(exist_ok=True)
+    
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    for config_file in config_dir.glob('*.json'):
+        if config_file.is_file():
+            backup_path = backup_dir / f"{config_file.stem}_{timestamp}.json"
+            config_file.rename(backup_path)
+            logger.info(f"Backed up {config_file.name} to {backup_path.name}")
+    
+    logger.info("Configuration reset. Defaults will be created on next run.")
 
 
 def main():
-    """Main entry point"""
-    # Set up global exception handler
+    """Main entry point for the application."""
+    global logger
+    
+    # Parse arguments first (before logging, so --help works fast)
+    args = parse_arguments()
+    
+    # Ensure directories exist
+    ensure_directories()
+    
+    # Setup logging
+    logger = setup_logging()
+    
+    if args.debug:
+        import logging
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug("Debug logging enabled")
+    
+    logger.info("=" * 50)
+    logger.info("James's Project Launcher starting...")
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"Working directory: {APP_DIR}")
+    logger.info(f"Arguments: minimized={args.minimized}, debug={args.debug}")
+    
+    # Handle config reset
+    if args.reset_config:
+        reset_configuration()
+        print("Configuration reset complete. Please restart the application.")
+        return 0
+    
+    # Check dependencies
+    if not check_dependencies():
+        logger.error("Missing dependencies. Please install required packages.")
+        return 1
+    
+    # Check for existing instance (optional - can be disabled)
+    # if not check_single_instance():
+    #     logger.info("Another instance is running. Exiting.")
+    #     return 0
+    
+    # Install global exception handler
     sys.excepthook = handle_exception
     
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="James's Project Launcher")
-    parser.add_argument(
-        '--minimized',
-        action='store_true',
-        help='Start application minimized to system tray'
-    )
-    args = parser.parse_args()
-    
+    # Import and run the application
     try:
-        logger.info("Starting App Launcher...")
+        logger.info("Loading application modules...")
         
-        # Import and create app
         from src.app import AppLauncher
+        
+        # Create and run the application
+        logger.info("Creating application window...")
         app = AppLauncher()
         
         # Start minimized if requested (from command line)
@@ -69,16 +300,45 @@ def main():
             app._minimized_from_cli = True  # Mark that this was from CLI
             app.after(100, app.withdraw)
         
-        # Run application
+        logger.info("Application initialized successfully")
+        logger.info("Starting main event loop...")
+        
+        # Run the application
         app.run()
         
-        logger.info("Application closed")
-    except KeyboardInterrupt:
-        logger.info("Application interrupted by user")
+        logger.info("Application closed normally")
+        return 0
+        
+    except ImportError as e:
+        logger.error(f"Failed to import application modules: {e}")
+        logger.error("Make sure all source files are present in the src/ directory")
+        
+        # Show helpful error
+        import tkinter as tk
+        from tkinter import messagebox
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(
+            "Import Error",
+            f"Failed to load application:\n\n{e}\n\n"
+            f"Please ensure all files are present in the src/ directory."
+        )
+        root.destroy()
+        return 1
+        
     except Exception as e:
-        logger.critical(f"Fatal error: {e}", exc_info=True)
-        raise
+        logger.exception(f"Failed to start application: {e}")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        exit_code = main()
+        sys.exit(exit_code)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\nFatal error: {e}")
+        traceback.print_exc()
+        sys.exit(1)
