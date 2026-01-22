@@ -197,6 +197,10 @@ class AppLauncher(ctk.CTk):
         )
         self.search_bar.pack(fill='x', padx=0, pady=0)
         
+        # Status bar at bottom (create before tabs so it can be passed to DownloadsTab)
+        self.status_bar = StatusBar(self.main_container, on_settings_click=self.open_settings)
+        self.status_bar.pack(fill='x', side='bottom', padx=0, pady=0)
+        
         # Tab view
         self.tabview = ctk.CTkTabview(
             self.main_container,
@@ -210,6 +214,11 @@ class AppLauncher(ctk.CTk):
             text_color_disabled=COLORS['text_muted']
         )
         self.tabview.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Add tabs to tabview first (required before accessing them)
+        self.tabview.add("Projects")
+        self.tabview.add("Downloads")
+        self.tabview.add("Utilities")
         
         # Create tabs (empty placeholders for now)
         self.projects_tab = ProjectsTab(
@@ -233,10 +242,6 @@ class AppLauncher(ctk.CTk):
         
         # Bind tab change event for future enhancements
         self.tabview.configure(command=self.on_tab_changed)
-        
-        # Status bar at bottom
-        self.status_bar = StatusBar(self.main_container, on_settings_click=self.open_settings)
-        self.status_bar.pack(fill='x', side='bottom', padx=0, pady=0)
         
         # Update status
         self.status_bar.set_status("Ready")
