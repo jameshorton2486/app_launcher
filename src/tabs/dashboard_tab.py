@@ -67,12 +67,12 @@ class DashboardTab(ctk.CTkScrollableFrame):
         """Build dashboard layout."""
         # Welcome section
         welcome_frame = ctk.CTkFrame(self, fg_color='transparent')
-        welcome_frame.pack(fill='x', padx=20, pady=(20, 10))
+        welcome_frame.pack(fill='x', padx=40, pady=(32, 16))
 
         title = ctk.CTkLabel(
             welcome_frame,
             text="Welcome to App Launcher",
-            font=('Segoe UI', 22, 'bold'),
+            font=('Segoe UI', 30, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         )
@@ -81,7 +81,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         subtitle = ctk.CTkLabel(
             welcome_frame,
             text="Your centralized hub for launching projects, optimizing Windows performance, and maintaining your system.",
-            font=('Segoe UI', 12),
+            font=('Segoe UI', 14),
             text_color=COLORS['text_secondary'],
             anchor='w',
             wraplength=900
@@ -102,7 +102,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
         # Cards grid
         grid_frame = ctk.CTkFrame(self, fg_color='transparent')
-        grid_frame.pack(fill='x', padx=20, pady=(10, 0))
+        grid_frame.pack(fill='x', padx=40, pady=(0, 0))
         grid_frame.grid_columnconfigure(0, weight=1)
         grid_frame.grid_columnconfigure(1, weight=1)
 
@@ -115,7 +115,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         self._build_quick_actions(actions_card)
 
         projects_card = self._create_card(self, "Recent Projects")
-        projects_card.pack(fill='x', padx=20, pady=10)
+        projects_card.pack(fill='x', padx=40, pady=16)
         self._build_recent_projects(projects_card)
 
     def _create_card(self, parent, title: str):
@@ -136,7 +136,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
             text_color=COLORS['text_primary'],
             anchor='w'
         )
-        header.pack(fill='x', padx=24, pady=(20, 10))
+        header.pack(fill='x', padx=24, pady=(20, 12))
 
         content = ctk.CTkFrame(card, fg_color='transparent')
         content.pack(fill='both', expand=True, padx=24, pady=(0, 20))
@@ -161,7 +161,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         label_widget = ctk.CTkLabel(
             row,
             text=label,
-            font=('Segoe UI', 12, 'bold'),
+            font=('Segoe UI', 14, 'bold'),
             text_color=COLORS['text_primary'],
             width=80,
             anchor='w'
@@ -171,7 +171,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         value_label = ctk.CTkLabel(
             row,
             text="--",
-            font=('Segoe UI', 12),
+            font=('Segoe UI', 14),
             text_color=COLORS['text_secondary'],
             anchor='e'
         )
@@ -196,7 +196,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         label_widget = ctk.CTkLabel(
             row,
             text=label,
-            font=('Segoe UI', 12, 'bold'),
+            font=('Segoe UI', 14, 'bold'),
             text_color=COLORS['text_primary'],
             width=80,
             anchor='w'
@@ -206,7 +206,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         value_label = ctk.CTkLabel(
             row,
             text="--",
-            font=('Segoe UI', 12),
+            font=('Segoe UI', 14),
             text_color=COLORS['text_secondary'],
             anchor='w'
         )

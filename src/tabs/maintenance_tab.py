@@ -52,7 +52,7 @@ class CollapsibleSection(ctk.CTkFrame):
         title_label = ctk.CTkLabel(
             header,
             text=f"{icon} {title}".strip(),
-            font=('Segoe UI', 16, 'bold'),
+            font=('Segoe UI', 18, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         )
@@ -61,7 +61,7 @@ class CollapsibleSection(ctk.CTkFrame):
         arrow = ctk.CTkLabel(
             header,
             textvariable=self._arrow_text,
-            font=('Segoe UI', 16, 'bold'),
+            font=('Segoe UI', 18, 'bold'),
             text_color=COLORS['text_secondary']
         )
         arrow.pack(side='right')
@@ -128,7 +128,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
 
         for section in sections:
             card = ctk.CTkFrame(self, fg_color=COLORS['border_default'], corner_radius=16)
-            card.pack(fill='x', padx=20, pady=12)
+            card.pack(fill='x', padx=40, pady=12)
 
             section_frame = CollapsibleSection(
                 card,

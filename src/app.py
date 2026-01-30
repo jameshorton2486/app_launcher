@@ -292,7 +292,7 @@ class AppLauncher(ctk.CTk):
 
         # Content frame
         self.content_frame = ctk.CTkFrame(self.content_container, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.content_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        self.content_frame.pack(fill='both', expand=True, padx=40, pady=32)
 
         # Status bar at bottom
         self.status_bar = StatusBar(self.content_container, on_settings_click=self.open_settings)

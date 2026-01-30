@@ -52,7 +52,7 @@ class CollapsibleSection(ctk.CTkFrame):
         title_label = ctk.CTkLabel(
             header,
             text=title,
-            font=('Segoe UI', 16, 'bold'),
+            font=('Segoe UI', 18, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         )
@@ -61,7 +61,7 @@ class CollapsibleSection(ctk.CTkFrame):
         arrow = ctk.CTkLabel(
             header,
             textvariable=self._arrow_text,
-            font=('Segoe UI', 16, 'bold'),
+            font=('Segoe UI', 18, 'bold'),
             text_color=COLORS['text_secondary']
         )
         arrow.pack(side='right')
@@ -105,12 +105,12 @@ class SettingsTab(ctk.CTkScrollableFrame):
 
     def setup_ui(self):
         header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=20, pady=(20, 10))
+        header.pack(fill='x', padx=40, pady=(32, 16))
 
         title = ctk.CTkLabel(
             header,
             text="Settings",
-            font=('Segoe UI', 22, 'bold'),
+            font=('Segoe UI', 30, 'bold'),
             text_color=COLORS['text_primary']
         )
         title.pack(side='left')
@@ -124,7 +124,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.save_status.pack(side='right')
 
         self.sections_container = ctk.CTkFrame(self, fg_color='transparent')
-        self.sections_container.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        self.sections_container.pack(fill='both', expand=True, padx=40, pady=(0, 32))
 
         self._build_general_section()
         self._build_appearance_section()
