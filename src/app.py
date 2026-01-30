@@ -22,7 +22,8 @@ from src.components.status_bar import StatusBar
 from src.tabs.dashboard_tab import DashboardTab
 from src.tabs.projects_tab import ProjectsTab
 from src.tabs.downloads_tab import DownloadsTab
-from src.tabs.utilities_tab import UtilitiesTab
+from src.tabs.optimization_tab import OptimizationTab
+from src.tabs.maintenance_tab import MaintenanceTab
 from src.tabs.settings_tab import SettingsTab
 from src.services.process_service import ProcessService
 from src.services.cleanup_service import CleanupService
@@ -134,7 +135,8 @@ class AppLauncher(ctk.CTk):
             # Tab instances (will be created in setup_ui)
             self.projects_tab = None
             self.downloads_tab = None
-            self.utilities_tab = None
+            self.optimization_tab = None
+            self.maintenance_tab = None
             
             # Apply theme (read from config)
             theme_mode = self.config_manager.get_setting('theme.mode', 'dark')
@@ -404,30 +406,12 @@ class AppLauncher(ctk.CTk):
         self.projects_tab.pack(fill='both', expand=True)
 
         optimization_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        optimization_label = ctk.CTkLabel(
-            optimization_view,
-            text="Optimization (coming soon)",
-            font=('Segoe UI', 18, 'bold'),
-            text_color=COLORS['text_primary'],
-            anchor='w'
-        )
-        optimization_label.pack(fill='x', padx=10, pady=10)
+        self.optimization_tab = OptimizationTab(optimization_view, self.config_manager)
+        self.optimization_tab.pack(fill='both', expand=True)
 
         maintenance_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        maintenance_label = ctk.CTkLabel(
-            maintenance_view,
-            text="Maintenance (coming soon)",
-            font=('Segoe UI', 18, 'bold'),
-            text_color=COLORS['text_primary'],
-            anchor='w'
-        )
-        maintenance_label.pack(fill='x', padx=10, pady=(0, 10))
-
-        self.utilities_tab = UtilitiesTab(
-            maintenance_view,
-            self.config_manager
-        )
-        self.utilities_tab.pack(fill='both', expand=True)
+        self.maintenance_tab = MaintenanceTab(maintenance_view, self.config_manager)
+        self.maintenance_tab.pack(fill='both', expand=True)
 
         settings_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
         self.settings_tab = SettingsTab(settings_view, self.config_manager, on_save=self.on_settings_saved)
@@ -681,9 +665,9 @@ class AppLauncher(ctk.CTk):
                 self.projects_tab.filter_projects(search_text)
             elif current_view == "Downloads" and self.downloads_tab:
                 self.downloads_tab.filter_by_search(search_text)
-            elif current_view == "Maintenance" and self.utilities_tab:
-                if hasattr(self.utilities_tab, 'filter_utilities'):
-                    self.utilities_tab.filter_utilities(search_text)
+            elif current_view == "Maintenance" and self.maintenance_tab:
+                if hasattr(self.maintenance_tab, 'filter_utilities'):
+                    self.maintenance_tab.filter_utilities(search_text)
         except Exception as e:
             logger.error(f"Error in search: {e}", exc_info=True)
             self.status_bar.set_status("Search error")
