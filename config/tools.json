@@ -1,220 +1,758 @@
 {
+  "version": "1.0",
   "sections": [
     {
       "id": "quick_cleanup",
       "title": "QUICK CLEANUP",
+      "icon": "🧹",
+      "description": "Fast cleanup tasks that free disk space and fix common issues. Safe to run daily.",
+      "tab": "maintenance",
       "tools": [
         {
           "id": "empty_recycle_bin",
-          "icon": "🗑️",
           "title": "Empty Recycle Bin",
-          "subtitle": "",
-          "tooltip": "Permanently delete all files in the Recycle Bin",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "empty_recycle_bin"
-          }
+          "icon": "🗑",
+          "description": "Permanently delete all files in Recycle Bin to free disk space",
+          "service": "cleanup",
+          "method": "empty_recycle_bin",
+          "requires_admin": false,
+          "tags": ["cleanup", "disk", "quick"]
         },
         {
           "id": "clear_temp_files",
-          "icon": "🧹",
           "title": "Clear Temp Files",
-          "subtitle": "",
-          "tooltip": "Delete temporary files from %temp% and Windows\\Temp",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "clear_temp_files"
-          }
+          "icon": "🧹",
+          "description": "Delete temporary files from %TEMP% and Windows\\Temp folders",
+          "service": "cleanup",
+          "method": "clear_temp_files",
+          "requires_admin": false,
+          "tags": ["cleanup", "disk", "quick"]
         },
         {
           "id": "flush_dns",
-          "icon": "🔄",
           "title": "Flush DNS",
-          "subtitle": "",
-          "tooltip": "Clear the DNS resolver cache",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "flush_dns"
-          }
+          "icon": "🔄",
+          "description": "Clear DNS resolver cache to fix website connection issues",
+          "service": "cleanup",
+          "method": "flush_dns",
+          "requires_admin": false,
+          "tags": ["network", "quick"]
         },
         {
           "id": "clear_prefetch",
-          "icon": "📁",
           "title": "Clear Prefetch",
-          "subtitle": "",
-          "tooltip": "Clear Windows Prefetch folder (requires admin)",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "clear_prefetch"
-          }
-        }
-      ]
-    },
-    {
-      "id": "memory_performance",
-      "title": "MEMORY & PERFORMANCE",
-      "tools": [
+          "icon": "📁",
+          "description": "Remove Windows Prefetch cache files (requires admin)",
+          "service": "cleanup",
+          "method": "clear_prefetch",
+          "requires_admin": true,
+          "tags": ["cleanup", "disk", "admin"]
+        },
         {
-          "id": "clear_standby_ram",
-          "icon": "🧠",
+          "id": "clear_ram_standby",
           "title": "Clear RAM Standby",
-          "subtitle": "",
-          "tooltip": "Free up standby memory",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "clear_standby_ram"
-          }
-        },
-        {
-          "id": "disk_cleanup",
-          "icon": "💾",
-          "title": "Disk Cleanup",
-          "subtitle": "",
-          "tooltip": "Launch Windows Disk Cleanup tool",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "run_disk_cleanup"
-          }
-        },
-        {
-          "id": "defrag_optimize",
-          "icon": "⚡",
-          "title": "Defrag/Optimize",
-          "subtitle": "",
-          "tooltip": "Optimize and defragment drive C:",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "optimize_drive",
-            "args": [
-              "C:"
-            ]
-          }
-        },
-        {
-          "id": "restart_explorer",
-          "icon": "🔄",
-          "title": "Restart Explorer",
-          "subtitle": "",
-          "tooltip": "Restart Windows Explorer process",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "restart_explorer"
-          }
-        }
-      ]
-    },
-    {
-      "id": "external_tools",
-      "title": "EXTERNAL TOOLS",
-      "tools": [
-        {
-          "id": "open_ccleaner",
-          "icon": "🧽",
-          "title": "Open CCleaner",
-          "subtitle": "",
-          "tooltip": "Launch CCleaner (configure path in settings)",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "launch_ccleaner",
-            "args": [
-              "$config_manager"
-            ]
-          }
-        },
-        {
-          "id": "open_wise_memory",
           "icon": "🧠",
-          "title": "Open Wise Memory",
-          "subtitle": "",
-          "tooltip": "Launch Wise Memory Cleaner (configure path in settings)",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "launch_wise_memory_cleaner",
-            "args": [
-              "$config_manager"
-            ]
-          }
+          "description": "Release memory held in standby list for active applications",
+          "service": "cleanup",
+          "method": "clear_standby_ram",
+          "requires_admin": false,
+          "tags": ["memory", "performance"]
+        },
+        {
+          "id": "clear_update_cache",
+          "title": "Clear Update Cache",
+          "icon": "🗑",
+          "description": "Delete Windows Update download cache to fix stuck updates",
+          "service": "cleanup",
+          "method": "clear_windows_update_cache",
+          "requires_admin": true,
+          "tags": ["cleanup", "updates", "admin"]
         },
         {
           "id": "reset_ms_store",
-          "icon": "🏪",
           "title": "Reset MS Store",
-          "subtitle": "",
-          "tooltip": "Reset Microsoft Store cache",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "reset_ms_store"
-          }
+          "icon": "🏪",
+          "description": "Reset Microsoft Store cache to fix app download issues",
+          "service": "cleanup",
+          "method": "reset_ms_store",
+          "requires_admin": false,
+          "tags": ["cleanup", "apps"]
+        }
+      ]
+    },
+    {
+      "id": "memory_disk",
+      "title": "MEMORY & DISK",
+      "icon": "💾",
+      "description": "Deep cleaning and optimization. Some operations take several minutes.",
+      "tab": "maintenance",
+      "tools": [
+        {
+          "id": "disk_cleanup",
+          "title": "Disk Cleanup",
+          "icon": "💾",
+          "description": "Launch Windows built-in Disk Cleanup utility",
+          "service": "cleanup",
+          "method": "run_disk_cleanup",
+          "requires_admin": false,
+          "tags": ["cleanup", "disk"]
+        },
+        {
+          "id": "optimize_drives",
+          "title": "Optimize Drives",
+          "icon": "",
+          "description": "Run TRIM for SSD or defragmentation for HDD",
+          "service": "cleanup",
+          "method": "optimize_drive",
+          "requires_admin": true,
+          "tags": ["disk", "performance", "admin"]
+        },
+        {
+          "id": "restart_explorer",
+          "title": "Restart Explorer",
+          "icon": "🔄",
+          "description": "Restart Windows Explorer to fix taskbar/desktop issues",
+          "service": "cleanup",
+          "method": "restart_explorer",
+          "requires_admin": false,
+          "tags": ["system", "quick"]
         }
       ]
     },
     {
       "id": "network",
       "title": "NETWORK",
+      "icon": "🌐",
+      "description": "Network troubleshooting tools for connection issues.",
+      "tab": "maintenance",
       "tools": [
         {
           "id": "reset_tcpip",
-          "icon": "🌐",
           "title": "Reset TCP/IP",
-          "subtitle": "",
-          "tooltip": "Reset network stack (requires admin, restart recommended)",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "reset_network"
-          }
+          "icon": "🌐",
+          "description": "Reset entire network stack to factory defaults (restart recommended)",
+          "service": "cleanup",
+          "method": "reset_network",
+          "requires_admin": true,
+          "requires_restart": true,
+          "tags": ["network", "admin", "restart"]
         },
         {
           "id": "release_renew_ip",
-          "icon": "🔌",
           "title": "Release/Renew IP",
-          "subtitle": "",
-          "tooltip": "Release and renew IP address",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "release_renew_ip"
-          }
+          "icon": "🔌",
+          "description": "Get new IP address from DHCP server to resolve conflicts",
+          "service": "cleanup",
+          "method": "release_renew_ip",
+          "requires_admin": false,
+          "tags": ["network"]
         },
         {
           "id": "network_stats",
-          "icon": "📶",
           "title": "Network Stats",
-          "subtitle": "",
-          "tooltip": "Display network statistics",
-          "handler": {
-            "service": "utilities_tab",
-            "method": "show_network_stats"
-          }
+          "icon": "📶",
+          "description": "Display network interface statistics",
+          "service": "cleanup",
+          "method": "get_network_stats",
+          "requires_admin": false,
+          "tags": ["network", "info"]
         }
       ]
     },
     {
-      "id": "windows_update",
-      "title": "WINDOWS UPDATE",
+      "id": "system_repair",
+      "title": "SYSTEM REPAIR",
+      "icon": "🔧",
+      "description": "Windows repair tools for corrupted files. These take 10-45 minutes.",
+      "tab": "maintenance",
       "tools": [
         {
-          "id": "clear_update_cache",
-          "icon": "🗑️",
-          "title": "Clear Update Cache",
-          "subtitle": "",
-          "tooltip": "Clear Windows Update cache (requires admin)",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "clear_windows_update_cache"
-          }
+          "id": "sfc_scan",
+          "title": "SFC Scan",
+          "icon": "🔧",
+          "description": "Run System File Checker to repair corrupted Windows files (10-30 min)",
+          "service": "maintenance",
+          "method": "run_sfc_scan",
+          "requires_admin": true,
+          "tags": ["repair", "admin", "long"]
         },
         {
-          "id": "pause_updates",
-          "icon": "⏸️",
-          "title": "Pause Updates",
-          "subtitle": "(7 days)",
-          "tooltip": "Pause Windows Updates for 7 days",
-          "handler": {
-            "service": "cleanup_service",
-            "method": "pause_windows_updates",
-            "args": [
-              7
-            ]
-          }
+          "id": "dism_repair",
+          "title": "DISM Repair",
+          "icon": "🛠",
+          "description": "Repair Windows component store using DISM RestoreHealth (15-45 min)",
+          "service": "maintenance",
+          "method": "run_dism_repair",
+          "requires_admin": true,
+          "tags": ["repair", "admin", "long"]
+        },
+        {
+          "id": "chkdsk",
+          "title": "CHKDSK",
+          "icon": "💿",
+          "description": "Schedule disk check for next restart to find bad sectors",
+          "service": "maintenance",
+          "method": "schedule_chkdsk",
+          "requires_admin": true,
+          "requires_restart": true,
+          "tags": ["disk", "repair", "admin", "restart"]
+        },
+        {
+          "id": "reset_windows_update",
+          "title": "Reset Windows Update",
+          "icon": "🔄",
+          "description": "Comprehensive Windows Update repair (stops services, clears cache)",
+          "service": "maintenance",
+          "method": "reset_windows_update",
+          "requires_admin": true,
+          "tags": ["updates", "repair", "admin"]
+        }
+      ]
+    },
+    {
+      "id": "privacy",
+      "title": "PRIVACY",
+      "icon": "🔒",
+      "description": "Reduce Windows data collection. These settings don't break Windows.",
+      "tab": "maintenance",
+      "tools": [
+        {
+          "id": "disable_telemetry",
+          "title": "Disable Telemetry",
+          "icon": "🔒",
+          "description": "Reduce Windows data collection to minimum allowed level",
+          "service": "optimization",
+          "method": "disable_telemetry",
+          "requires_admin": true,
+          "tags": ["privacy", "admin"]
+        },
+        {
+          "id": "disable_activity_history",
+          "title": "Disable Activity History",
+          "icon": "📜",
+          "description": "Stop activity tracking and timeline sync",
+          "service": "optimization",
+          "method": "disable_activity_history",
+          "requires_admin": false,
+          "tags": ["privacy"]
+        },
+        {
+          "id": "disable_advertising_id",
+          "title": "Disable Advertising ID",
+          "icon": "🚫",
+          "description": "Prevent personalized ads tracking",
+          "service": "optimization",
+          "method": "disable_advertising_id",
+          "requires_admin": false,
+          "tags": ["privacy"]
+        },
+        {
+          "id": "disable_cortana",
+          "title": "Disable Cortana",
+          "icon": "🎤",
+          "description": "Turn off Cortana assistant and remove background process",
+          "service": "optimization",
+          "method": "disable_cortana",
+          "requires_admin": false,
+          "tags": ["privacy", "performance"]
+        }
+      ]
+    },
+    {
+      "id": "sysmain",
+      "title": "SYSMAIN (SUPERFETCH)",
+      "icon": "",
+      "description": "Controls whether Windows pre-loads apps into RAM. Disable on SSD + 8GB+ RAM systems.",
+      "tab": "optimization",
+      "tools": [
+        {
+          "id": "disable_sysmain",
+          "title": "Disable SysMain",
+          "icon": "",
+          "description": "Stop SysMain service and RAM preloading (recommended for SSD)",
+          "service": "optimization",
+          "method": "disable_sysmain",
+          "requires_admin": true,
+          "tags": ["performance", "memory", "admin"]
+        },
+        {
+          "id": "enable_sysmain",
+          "title": "Enable SysMain",
+          "icon": "🔄",
+          "description": "Re-enable SysMain for HDD or low-RAM systems",
+          "service": "optimization",
+          "method": "enable_sysmain",
+          "requires_admin": true,
+          "tags": ["memory", "admin"]
+        },
+        {
+          "id": "sysmain_status",
+          "title": "SysMain Status",
+          "icon": "📊",
+          "description": "Check current SysMain state with hardware recommendations",
+          "service": "optimization",
+          "method": "get_sysmain_status",
+          "requires_admin": false,
+          "tags": ["info"]
+        }
+      ]
+    },
+    {
+      "id": "visual_effects",
+      "title": "VISUAL EFFECTS",
+      "icon": "🎨",
+      "description": "Manage Windows animations and transparency. Disabling makes the system snappier.",
+      "tab": "optimization",
+      "tools": [
+        {
+          "id": "disable_animations",
+          "title": "Disable Animations",
+          "icon": "🎨",
+          "description": "Turn off window animations (minimize, maximize, fade)",
+          "service": "optimization",
+          "method": "disable_animations",
+          "requires_admin": false,
+          "tags": ["performance", "visual"]
+        },
+        {
+          "id": "enable_animations",
+          "title": "Enable Animations",
+          "icon": "🎭",
+          "description": "Restore all window animations",
+          "service": "optimization",
+          "method": "enable_animations",
+          "requires_admin": false,
+          "tags": ["visual"]
+        },
+        {
+          "id": "disable_transparency",
+          "title": "Disable Transparency",
+          "icon": "",
+          "description": "Turn off Mica/Acrylic effects to reduce GPU load",
+          "service": "optimization",
+          "method": "disable_transparency",
+          "requires_admin": false,
+          "tags": ["performance", "visual"]
+        },
+        {
+          "id": "enable_transparency",
+          "title": "Enable Transparency",
+          "icon": "🌟",
+          "description": "Restore transparency effects",
+          "service": "optimization",
+          "method": "enable_transparency",
+          "requires_admin": false,
+          "tags": ["visual"]
+        },
+        {
+          "id": "best_performance",
+          "title": "Best Performance",
+          "icon": "🚀",
+          "description": "Apply all performance settings at once",
+          "service": "optimization",
+          "method": "set_best_performance",
+          "requires_admin": false,
+          "tags": ["performance", "visual"]
+        },
+        {
+          "id": "best_appearance",
+          "title": "Best Appearance",
+          "icon": "💎",
+          "description": "Restore all visual effects for best appearance",
+          "service": "optimization",
+          "method": "set_best_appearance",
+          "requires_admin": false,
+          "tags": ["visual"]
+        }
+      ]
+    },
+    {
+      "id": "background_services",
+      "title": "BACKGROUND SERVICES",
+      "icon": "📰",
+      "description": "Control background services that consume resources even when not used.",
+      "tab": "optimization",
+      "tools": [
+        {
+          "id": "disable_widgets",
+          "title": "Disable Widgets",
+          "icon": "📰",
+          "description": "Stop Widgets and WebView2 processes (reclaims 200-400MB RAM)",
+          "service": "optimization",
+          "method": "disable_widgets",
+          "requires_admin": false,
+          "tags": ["performance", "memory"]
+        },
+        {
+          "id": "enable_widgets",
+          "title": "Enable Widgets",
+          "icon": "📰",
+          "description": "Restore Windows Widgets functionality",
+          "service": "optimization",
+          "method": "enable_widgets",
+          "requires_admin": false,
+          "tags": []
+        },
+        {
+          "id": "disable_search_web",
+          "title": "Disable Search Web",
+          "icon": "🔍",
+          "description": "Remove Bing/web results from Start menu search",
+          "service": "optimization",
+          "method": "disable_search_highlights",
+          "requires_admin": false,
+          "tags": ["performance", "privacy"]
+        },
+        {
+          "id": "disable_delivery_opt",
+          "title": "Disable Delivery Opt",
+          "icon": "📥",
+          "description": "Stop sharing Windows updates with other PCs (saves bandwidth)",
+          "service": "optimization",
+          "method": "disable_delivery_optimization",
+          "requires_admin": true,
+          "tags": ["network", "admin"]
+        },
+        {
+          "id": "enable_delivery_opt",
+          "title": "Enable Delivery Opt",
+          "icon": "📤",
+          "description": "Enable update sharing (LAN only mode)",
+          "service": "optimization",
+          "method": "enable_delivery_optimization",
+          "requires_admin": true,
+          "tags": ["network", "admin"]
+        }
+      ]
+    },
+    {
+      "id": "gaming",
+      "title": "GAMING",
+      "icon": "🎮",
+      "description": "Optimize Windows for gaming. Some settings trade security for performance.",
+      "tab": "optimization",
+      "tools": [
+        {
+          "id": "enable_game_mode",
+          "title": "Enable Game Mode",
+          "icon": "🎮",
+          "description": "Prioritize games and prevent update interruptions",
+          "service": "optimization",
+          "method": "enable_game_mode",
+          "requires_admin": false,
+          "tags": ["gaming", "performance"]
+        },
+        {
+          "id": "disable_game_mode",
+          "title": "Disable Game Mode",
+          "icon": "🎮",
+          "description": "Turn off Windows Game Mode",
+          "service": "optimization",
+          "method": "disable_game_mode",
+          "requires_admin": false,
+          "tags": ["gaming"]
+        },
+        {
+          "id": "enable_hags",
+          "title": "Enable HAGS",
+          "icon": "🖥",
+          "description": "Enable Hardware-Accelerated GPU Scheduling (restart required)",
+          "service": "optimization",
+          "method": "enable_hags",
+          "requires_admin": true,
+          "requires_restart": true,
+          "tags": ["gaming", "performance", "admin", "restart"]
+        },
+        {
+          "id": "disable_hags",
+          "title": "Disable HAGS",
+          "icon": "🖥",
+          "description": "Disable HAGS if experiencing stability issues (restart required)",
+          "service": "optimization",
+          "method": "disable_hags",
+          "requires_admin": true,
+          "requires_restart": true,
+          "tags": ["gaming", "admin", "restart"]
+        },
+        {
+          "id": "disable_vbs",
+          "title": "Disable VBS",
+          "icon": "🔓",
+          "description": " SECURITY: Disable VBS for 5-25% gaming boost (reduces protection)",
+          "service": "optimization",
+          "method": "disable_vbs",
+          "requires_admin": true,
+          "requires_restart": true,
+          "requires_confirmation": true,
+          "warning": "This reduces protection against kernel-level malware",
+          "tags": ["gaming", "performance", "admin", "restart", "security"]
+        },
+        {
+          "id": "enable_vbs",
+          "title": "Enable VBS",
+          "icon": "🔒",
+          "description": "Re-enable Virtualization-Based Security (recommended)",
+          "service": "optimization",
+          "method": "enable_vbs",
+          "requires_admin": true,
+          "requires_restart": true,
+          "tags": ["security", "admin", "restart"]
+        }
+      ]
+    },
+    {
+      "id": "power_plans",
+      "title": "POWER PLAN",
+      "icon": "",
+      "description": "Switch between Windows power plans. Higher performance uses more energy.",
+      "tab": "optimization",
+      "tools": [
+        {
+          "id": "balanced_plan",
+          "title": "Balanced",
+          "icon": "",
+          "description": "Standard power plan - balances performance and energy",
+          "service": "optimization",
+          "method": "set_power_plan",
+          "method_args": ["balanced"],
+          "requires_admin": true,
+          "tags": ["power", "admin"]
+        },
+        {
+          "id": "high_performance_plan",
+          "title": "High Performance",
+          "icon": "",
+          "description": "Maximum CPU performance for desktops and gaming",
+          "service": "optimization",
+          "method": "set_power_plan",
+          "method_args": ["high_performance"],
+          "requires_admin": true,
+          "tags": ["power", "performance", "admin"]
+        },
+        {
+          "id": "ultimate_performance_plan",
+          "title": "Ultimate Performance",
+          "icon": "🔥",
+          "description": "Hidden maximum performance plan for workstations",
+          "service": "optimization",
+          "method": "set_power_plan",
+          "method_args": ["ultimate_performance"],
+          "requires_admin": true,
+          "tags": ["power", "performance", "admin"]
+        },
+        {
+          "id": "power_options",
+          "title": "Power Options",
+          "icon": "🔌",
+          "description": "Open Windows Power Options control panel",
+          "service": "optimization",
+          "method": "open_power_options",
+          "requires_admin": false,
+          "tags": ["power"]
+        }
+      ]
+    },
+    {
+      "id": "external_tools",
+      "title": "EXTERNAL TOOLS",
+      "icon": "🔧",
+      "description": "Launch third-party maintenance tools. Configure paths in Settings.",
+      "tab": "maintenance",
+      "tools": [
+        {
+          "id": "ccleaner",
+          "title": "CCleaner",
+          "icon": "🧽",
+          "description": "Comprehensive system cleaning utility",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["ccleaner"],
+          "requires_admin": false,
+          "external": true,
+          "tags": ["external", "cleanup"]
+        },
+        {
+          "id": "bleachbit",
+          "title": "BleachBit",
+          "icon": "🧹",
+          "description": "Privacy-focused open source cleaner",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["bleachbit"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.bleachbit.org/download",
+          "tags": ["external", "cleanup", "privacy"]
+        },
+        {
+          "id": "wise_memory",
+          "title": "Wise Memory Cleaner",
+          "icon": "🧠",
+          "description": "Aggressive RAM optimization utility",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["wise_memory"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.wisecleaner.com/wise-memory-optimizer.html",
+          "tags": ["external", "memory"]
+        },
+        {
+          "id": "treesize",
+          "title": "TreeSize Free",
+          "icon": "📊",
+          "description": "Visual disk space analyzer - find large files",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["treesize"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.jam-software.com/treesize_free",
+          "tags": ["external", "disk"]
+        },
+        {
+          "id": "everything",
+          "title": "Everything Search",
+          "icon": "🔍",
+          "description": "Instant file search (much faster than Windows)",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["everything"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.voidtools.com/downloads/",
+          "tags": ["external", "search"]
+        },
+        {
+          "id": "bcuninstaller",
+          "title": "BCUninstaller",
+          "icon": "📦",
+          "description": "Thorough software removal with leftover cleanup",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["bcuninstaller"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.bcuninstaller.com/",
+          "tags": ["external", "cleanup"]
+        },
+        {
+          "id": "crystaldiskinfo",
+          "title": "CrystalDiskInfo",
+          "icon": "💿",
+          "description": "Disk health monitor showing S.M.A.R.T. data",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["crystaldiskinfo"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://crystalmark.info/en/download/",
+          "tags": ["external", "disk", "info"]
+        },
+        {
+          "id": "hwinfo",
+          "title": "HWiNFO",
+          "icon": "🖥",
+          "description": "Comprehensive hardware monitoring",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["hwinfo"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.hwinfo.com/download/",
+          "tags": ["external", "info"]
+        },
+        {
+          "id": "cpuz",
+          "title": "CPU-Z",
+          "icon": "📋",
+          "description": "Detailed system information utility",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["cpuz"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.cpuid.com/softwares/cpu-z.html",
+          "tags": ["external", "info"]
+        },
+        {
+          "id": "autoruns",
+          "title": "Autoruns",
+          "icon": "🚀",
+          "description": "Microsoft Sysinternals comprehensive startup manager",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["autoruns"],
+          "requires_admin": true,
+          "external": true,
+          "download_url": "https://learn.microsoft.com/sysinternals/downloads/autoruns",
+          "tags": ["external", "startup", "admin"]
+        },
+        {
+          "id": "process_lasso",
+          "title": "Process Lasso",
+          "icon": "",
+          "description": "Process priority and CPU affinity manager",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["process_lasso"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://bitsum.com/processlasso/",
+          "tags": ["external", "performance"]
+        },
+        {
+          "id": "shutup10",
+          "title": "O&O ShutUp10++",
+          "icon": "🔒",
+          "description": "Windows privacy settings manager",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["shutup10"],
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://www.oo-software.com/en/shutup10",
+          "tags": ["external", "privacy"]
+        }
+      ]
+    },
+    {
+      "id": "developer",
+      "title": "DEVELOPER",
+      "icon": "💻",
+      "description": "Developer tools for project management and debugging.",
+      "tab": "projects",
+      "tools": [
+        {
+          "id": "open_github_desktop",
+          "title": "GitHub Desktop",
+          "icon": "🐙",
+          "description": "Launch GitHub Desktop for visual git management",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": ["github_desktop"],
+          "requires_admin": false,
+          "tags": ["developer", "git"]
+        },
+        {
+          "id": "open_terminal",
+          "title": "Open Terminal",
+          "icon": "💻",
+          "description": "Open Windows Terminal at project root",
+          "service": "process",
+          "method": "open_terminal",
+          "requires_admin": false,
+          "tags": ["developer"]
+        },
+        {
+          "id": "launch_debugger",
+          "title": "Debug Launch",
+          "icon": "🐛",
+          "description": "Launch project in IDE with debugger attached",
+          "service": "process",
+          "method": "launch_with_debugger",
+          "requires_admin": false,
+          "tags": ["developer", "debug"]
         }
       ]
     }

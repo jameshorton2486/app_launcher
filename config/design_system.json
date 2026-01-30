@@ -1,0 +1,60 @@
+{
+  "colors": {
+    "bg_base": "#0f0f12",
+    "bg_primary": "#16161a",
+    "bg_secondary": "#1e1e24",
+    "bg_tertiary": "#26262e",
+    "bg_hover": "#2e2e38",
+    "bg_active": "#36363f",
+    "accent_primary": "#6366f1",
+    "accent_secondary": "#818cf8",
+    "accent_muted": "#4f46e5",
+    "text_primary": "#fafafa",
+    "text_secondary": "#a1a1aa",
+    "text_tertiary": "#71717a",
+    "text_inverse": "#09090b",
+    "success": "#22c55e",
+    "warning": "#f59e0b",
+    "error": "#ef4444",
+    "info": "#3b82f6",
+    "border_subtle": "#27272a",
+    "border_default": "#3f3f46",
+    "border_strong": "#52525b"
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "corner_radius": {
+    "sm": 6,
+    "md": 8,
+    "lg": 12,
+    "xl": 16
+  },
+  "typography": {
+    "font_family": "Segoe UI",
+    "size_xs": 11,
+    "size_sm": 12,
+    "size_base": 14,
+    "size_lg": 16,
+    "size_xl": 18,
+    "size_2xl": 24,
+    "size_3xl": 30
+  },
+  "sidebar": {
+    "width_expanded": 240,
+    "width_collapsed": 72,
+    "item_height": 44
+  },
+  "tool_card": {
+    "compact_size": 80,
+    "standard_width": 140,
+    "standard_height": 100,
+    "icon_size": 32
+  }
+}
