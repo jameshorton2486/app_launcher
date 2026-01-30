@@ -7,6 +7,8 @@ import customtkinter as ctk
 import sys
 import os
 import tkinter.messagebox as messagebox
+import threading
+import ctypes
 
 # Add parent directory to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -176,7 +178,55 @@ class OptimizationTab(ctk.CTkScrollableFrame):
             logger.warning(f"Tool not found: {tool_id}")
             return False, "Tool not configured"
 
+        tool = self.tool_registry.get_tool_by_id(tool_id) or {}
+        if not self._confirm_admin_if_needed(tool):
+            return False, "Cancelled"
+
+        if tool_id in {"disable_vbs", "enable_vbs", "enable_hags", "disable_hags"}:
+            if not self._confirm_risky_operation(tool_id):
+                return False, "Cancelled"
+
         success, message = self.tool_registry.execute_tool(tool_id, self.config_manager)
         if not success:
             messagebox.showerror("Operation Failed", message)
         return success, message
+
+    @staticmethod
+    def _is_admin() -> bool:
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception:
+            return False
+
+    def _confirm_admin_if_needed(self, tool: dict) -> bool:
+        if not tool.get("requires_admin"):
+            return True
+        if self._is_admin():
+            return True
+
+        return self._prompt_user("Admin Required", "This action may require administrator privileges. Continue?")
+
+    def _confirm_risky_operation(self, tool_id: str) -> bool:
+        if tool_id == "disable_vbs":
+            message = (
+                "WARNING: Disabling VBS reduces protection against kernel-level malware.\n"
+                "This improves gaming performance by 5-25% but is NOT recommended for\n"
+                "general use. Only disable on dedicated gaming PCs.\n\n"
+                "Are you sure you want to continue?"
+            )
+        else:
+            message = "This operation changes GPU scheduling settings and may require a restart. Continue?"
+
+        return self._prompt_user("Confirm Action", message)
+
+    def _prompt_user(self, title: str, message: str) -> bool:
+        result = {"value": False}
+        ready = threading.Event()
+
+        def _ask():
+            result["value"] = messagebox.askyesno(title, message)
+            ready.set()
+
+        self.after(0, _ask)
+        ready.wait()
+        return result["value"]

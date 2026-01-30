@@ -7,6 +7,8 @@ import customtkinter as ctk
 import sys
 import os
 import tkinter.messagebox as messagebox
+import threading
+import ctypes
 
 # Add parent directory to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -181,6 +183,13 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             logger.warning(f"Tool not found: {tool_id}")
             return False, "Tool not configured"
 
+        tool = self.tool_registry.get_tool_by_id(tool_id) or {}
+        if not self._confirm_admin_if_needed(tool):
+            return False, "Cancelled"
+
+        if tool_id in {"sfc_scan", "dism_repair"}:
+            return self._run_with_progress(tool_id)
+
         success, message = self.tool_registry.execute_tool(tool_id, self.config_manager)
         if not success:
             messagebox.showerror("Operation Failed", message)
@@ -196,3 +205,80 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             return True, "Network stats displayed"
         messagebox.showerror("Network Statistics", stats)
         return False, stats
+
+    @staticmethod
+    def _is_admin() -> bool:
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception:
+            return False
+
+    def _confirm_admin_if_needed(self, tool: dict) -> bool:
+        if not tool.get("requires_admin"):
+            return True
+        if self._is_admin():
+            return True
+        return self._prompt_user("Admin Required", "This action may require administrator privileges. Continue?")
+
+    def _run_with_progress(self, tool_id: str):
+        dialog_ready = threading.Event()
+        dialog_container = {}
+
+        def show_dialog():
+            dialog = ctk.CTkToplevel(self)
+            dialog.title("Working...")
+            dialog.geometry("420x160")
+            dialog.configure(fg_color=COLORS['bg_primary'])
+            dialog.transient(self.winfo_toplevel())
+            dialog.grab_set()
+
+            label = ctk.CTkLabel(
+                dialog,
+                text="Operation in progress. This may take several minutes.",
+                font=('Segoe UI', 12),
+                text_color=COLORS['text_primary']
+            )
+            label.pack(pady=(20, 10))
+
+            progress = ctk.CTkProgressBar(
+                dialog,
+                height=8,
+                corner_radius=8,
+                fg_color=COLORS['bg_tertiary'],
+                progress_color=COLORS['accent_primary']
+            )
+            progress.pack(fill='x', padx=24, pady=(0, 20))
+            progress.configure(mode="indeterminate")
+            progress.start()
+
+            dialog_container["dialog"] = dialog
+            dialog_container["progress"] = progress
+            dialog_ready.set()
+
+        self.after(0, show_dialog)
+        dialog_ready.wait()
+
+        success, message = self.tool_registry.execute_tool(tool_id, self.config_manager)
+
+        def close_dialog():
+            dialog = dialog_container.get("dialog")
+            if dialog:
+                dialog.destroy()
+
+        self.after(0, close_dialog)
+
+        if not success:
+            messagebox.showerror("Operation Failed", message)
+        return success, message
+
+    def _prompt_user(self, title: str, message: str) -> bool:
+        result = {"value": False}
+        ready = threading.Event()
+
+        def _ask():
+            result["value"] = messagebox.askyesno(title, message)
+            ready.set()
+
+        self.after(0, _ask)
+        ready.wait()
+        return result["value"]
