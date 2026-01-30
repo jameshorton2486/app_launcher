@@ -52,8 +52,12 @@ class ToolRegistry:
             tools = section.get("tools", []) if isinstance(section, dict) else []
             for tool in tools:
                 tool_id = tool.get("id")
-                handler_config = tool.get("handler", {})
-                handler = self._build_handler(handler_config, services, context)
+                handler_config = tool.get("handler")
+                handler = None
+                if isinstance(handler_config, dict):
+                    handler = self._build_handler(handler_config, services, context)
+                else:
+                    handler = self._build_handler_from_fields(tool, services, context)
                 if not handler:
                     logger.warning(f"Tool {tool_id} missing handler configuration")
                     continue
@@ -63,10 +67,23 @@ class ToolRegistry:
                     "title": tool.get("title", ""),
                     "subtitle": tool.get("subtitle", ""),
                     "icon": tool.get("icon", ""),
-                    "tooltip": tool.get("tooltip", ""),
+                    "tooltip": tool.get("tooltip", "") or tool.get("description", ""),
                     "section": section.get("title", "")
                 }
                 self.register(tool_id, metadata, handler)
+
+    def _build_handler_from_fields(self, tool: Dict[str, Any], services: Dict[str, Any], context: Dict[str, Any]) -> Optional[Callable[[], Any]]:
+        service_name = tool.get("service")
+        method_name = tool.get("method")
+        args = tool.get("method_args", tool.get("args", []))
+        kwargs = tool.get("method_kwargs", tool.get("kwargs", {}))
+        handler_config = {
+            "service": service_name,
+            "method": method_name,
+            "args": args,
+            "kwargs": kwargs
+        }
+        return self._build_handler(handler_config, services, context)
 
     def _build_handler(self, handler_config: Dict[str, Any], services: Dict[str, Any], context: Dict[str, Any]) -> Optional[Callable[[], Any]]:
         if not isinstance(handler_config, dict):

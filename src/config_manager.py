@@ -617,7 +617,11 @@ class ConfigManager:
             for tool in section.get("tools", []):
                 if not isinstance(tool, dict):
                     return False
-                if "id" not in tool or "title" not in tool or "handler" not in tool:
+                if "id" not in tool or "title" not in tool:
+                    return False
+                has_handler = isinstance(tool.get("handler"), dict)
+                has_service = "service" in tool and "method" in tool
+                if not has_handler and not has_service:
                     return False
 
         return True

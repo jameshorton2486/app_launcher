@@ -84,7 +84,7 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
     menu_items = []
 
     tool_registry = ToolRegistry()
-    services = {"cleanup_service": cleanup_service}
+    services = {"cleanup_service": cleanup_service, "cleanup": cleanup_service}
     context = {"config_manager": config_manager}
     tool_registry.register_from_config(config_manager.tools or {}, services, context)
 
