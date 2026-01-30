@@ -8,6 +8,7 @@ import json
 import os
 from datetime import datetime, timedelta
 import re
+import threading
 
 # Try to import logger
 try:
@@ -121,7 +122,7 @@ class ToolRegistry:
 
         try:
             if not self._check_cooldown(tool):
-                return False, "Cancelled"
+                return True, "Cancelled"
             result = method(*resolved_args, **resolved_kwargs)
             success, message = self._normalize_result(result)
             self._record_usage(tool, success, message)
@@ -300,18 +301,17 @@ class ToolRegistry:
             return True
 
         days_ago = max(0, delta.days)
-        title = f"{tool.get('title', tool_id)} cooldown"
-        note = tool.get("notes") or "Running this tool too frequently can cause issues."
-        recommended = tool.get("recommended_frequency", "as_needed")
+        tool_name = tool.get("title", tool_id)
+        reason = tool.get("notes") or "cause issues"
+        reason_text = self._normalize_cooldown_reason(reason)
         warning = (
-            f"You ran {tool.get('title', tool_id)} {days_ago} days ago.\n\n"
-            f"{note}\n\n"
-            f"Recommended: Wait at least {cooldown} days between runs.\n"
-            f"Frequency: {recommended}\n\n"
-            "Run anyway?"
+            "⚠️ Cooldown Warning\n\n"
+            f"You ran '{tool_name}' {days_ago} days ago.\n\n"
+            f"Running this tool too frequently can {reason_text}.\n\n"
+            f"Recommended: Wait at least {cooldown} days between runs."
         )
 
-        return self._prompt_user(title, warning)
+        return self._prompt_cooldown("⚠️ Cooldown Warning", warning)
 
     def _prompt_user(self, title: str, message: str) -> bool:
         if not messagebox:
@@ -328,6 +328,105 @@ class ToolRegistry:
             return result
         except Exception:
             return True
+
+    def _prompt_cooldown(self, title: str, message: str) -> bool:
+        if not tk:
+            return self._prompt_user(title, message)
+
+        result = {"value": False}
+
+        def _show():
+            root = None
+            if not tk._default_root:
+                root = tk.Tk()
+                root.withdraw()
+                dialog = tk.Toplevel(root)
+            else:
+                dialog = tk.Toplevel(tk._default_root)
+            dialog.title(title)
+            dialog.configure(bg="#1f1f1f")
+            dialog.resizable(False, False)
+            dialog.attributes("-topmost", True)
+
+            frame = tk.Frame(dialog, bg="#1f1f1f", padx=20, pady=16)
+            frame.pack(fill="both", expand=True)
+
+            label = tk.Label(
+                frame,
+                text=message,
+                justify="left",
+                anchor="w",
+                bg="#1f1f1f",
+                fg="#e6e6e6",
+                wraplength=520
+            )
+            label.pack(fill="x")
+
+            button_row = tk.Frame(frame, bg="#1f1f1f")
+            button_row.pack(fill="x", pady=(16, 0))
+
+            def cancel():
+                result["value"] = False
+                dialog.destroy()
+                if root:
+                    root.destroy()
+
+            def proceed():
+                result["value"] = True
+                dialog.destroy()
+                if root:
+                    root.destroy()
+
+            cancel_btn = tk.Button(button_row, text="Cancel", width=12, command=cancel)
+            cancel_btn.pack(side="right", padx=(8, 0))
+
+            run_btn = tk.Button(button_row, text="Run Anyway", width=12, command=proceed)
+            run_btn.pack(side="right")
+
+            dialog.protocol("WM_DELETE_WINDOW", cancel)
+            dialog.update_idletasks()
+            dialog.grab_set()
+            dialog.wait_window()
+            return result["value"]
+
+        if threading.current_thread() is threading.main_thread():
+            return _show()
+
+        ready = threading.Event()
+
+        def _show_and_signal():
+            _show()
+            ready.set()
+
+        if tk._default_root:
+            tk._default_root.after(0, _show_and_signal)
+        else:
+            _show_and_signal()
+        ready.wait()
+        return result["value"]
+
+    @staticmethod
+    def _normalize_cooldown_reason(reason: str) -> str:
+        text = str(reason or "").strip()
+        if not text:
+            return "cause issues"
+        lower = text.lower()
+        if "can " in lower:
+            idx = lower.rfind("can ")
+            return text[idx + 4:].strip().rstrip(".")
+        if lower.startswith("may need to "):
+            return ("require you to " + text[12:]).strip().rstrip(".")
+        if lower.startswith("may "):
+            return text[4:].strip().rstrip(".")
+        if lower.startswith("takes "):
+            return ("take " + text[6:]).strip().rstrip(".")
+        if lower.startswith("runs "):
+            return ("run " + text[5:]).strip().rstrip(".")
+        if lower.startswith("uses "):
+            return ("use " + text[5:]).strip().rstrip(".")
+        return text.rstrip(".")
+
+    
 
     @staticmethod
     def _parse_freed_mb(message: str) -> float:
