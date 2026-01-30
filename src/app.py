@@ -19,6 +19,7 @@ from src.theme import COLORS, apply_theme
 from src.config_manager import ConfigManager
 from src.components.search_bar import SearchBar
 from src.components.status_bar import StatusBar
+from src.components.toast import ToastManager
 from src.components.command_palette import CommandPalette
 from src.tabs.dashboard_tab import DashboardTab
 from src.tabs.projects_tab import ProjectsTab
@@ -309,6 +310,7 @@ class AppLauncher(ctk.CTk):
         self._build_sidebar()
         self._build_views()
         self.show_view("Dashboard")
+        ToastManager.set_root(self)
 
         # Command palette bindings
         self.bind_all("<Control-k>", lambda e: self.open_command_palette())

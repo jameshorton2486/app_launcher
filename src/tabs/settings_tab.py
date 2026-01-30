@@ -142,11 +142,13 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.start_minimized = ctk.BooleanVar(value=self._get_setting('window.start_minimized', False))
         self.minimize_to_tray = ctk.BooleanVar(value=self._get_setting('window.minimize_to_tray', True))
         self.check_updates = ctk.BooleanVar(value=self._get_setting('updates.check_on_start', True))
+        self.show_toasts = ctk.BooleanVar(value=self._get_setting('ui.show_toasts', True))
 
         self._add_checkbox(section.content, "Start with Windows", self.start_with_windows)
         self._add_checkbox(section.content, "Start Minimized", self.start_minimized)
         self._add_checkbox(section.content, "Minimize to Tray on Close", self.minimize_to_tray)
         self._add_checkbox(section.content, "Check for Updates on Start", self.check_updates)
+        self._add_checkbox(section.content, "Show Toast Notifications", self.show_toasts)
 
         hotkey_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         hotkey_frame.pack(fill='x', pady=8)
@@ -169,6 +171,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.start_minimized.trace_add("write", lambda *_: self._queue_save())
         self.minimize_to_tray.trace_add("write", lambda *_: self._queue_save())
         self.check_updates.trace_add("write", lambda *_: self._queue_save())
+        self.show_toasts.trace_add("write", lambda *_: self._queue_save())
 
     def _build_appearance_section(self):
         section = CollapsibleSection(self.sections_container, "APPEARANCE")
@@ -514,6 +517,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._set_setting('window.start_minimized', self.start_minimized.get())
         self._set_setting('window.minimize_to_tray', self.minimize_to_tray.get())
         self._set_setting('updates.check_on_start', self.check_updates.get())
+        self._set_setting('ui.show_toasts', self.show_toasts.get())
 
         hotkey_value = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '').lower()
         self._set_setting('window.global_hotkey', hotkey_value)
@@ -604,6 +608,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.start_minimized.set(self._get_setting('window.start_minimized', False))
         self.minimize_to_tray.set(self._get_setting('window.minimize_to_tray', True))
         self.check_updates.set(self._get_setting('updates.check_on_start', True))
+        self.show_toasts.set(self._get_setting('ui.show_toasts', True))
 
         self.theme_mode.set(self._get_setting('theme.mode', 'dark'))
         self.sidebar_style.set(self._get_setting('appearance.sidebar_style', 'Expanded'))

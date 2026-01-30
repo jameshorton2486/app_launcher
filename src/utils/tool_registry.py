@@ -15,6 +15,11 @@ except ImportError:
     logger = logging.getLogger(__name__)
     logger.addHandler(logging.NullHandler())
 
+try:
+    from src.components.toast import ToastManager
+except Exception:
+    ToastManager = None
+
 
 class ToolRegistry:
     """Registry for tool definitions and execution"""
@@ -102,10 +107,14 @@ class ToolRegistry:
 
         try:
             result = method(*resolved_args, **resolved_kwargs)
-            return self._normalize_result(result)
+            success, message = self._normalize_result(result)
+            self._notify_toast(tool, success, message, config_manager)
+            return success, message
         except Exception as exc:
             logger.error(f"Tool execution failed for {tool_id}: {exc}")
-            return False, str(exc)
+            message = str(exc)
+            self._notify_toast(tool, False, message, config_manager)
+            return False, message
 
     def search_tools(self, query: str) -> List[dict]:
         """Search tools by query across IDs, titles, descriptions, and tags"""
@@ -221,6 +230,23 @@ class ToolRegistry:
         if result is None:
             return True, "Completed"
         return True, str(result)
+
+    def _notify_toast(self, tool: Dict[str, Any], success: bool, message: str, config_manager):
+        if not ToastManager:
+            return
+        try:
+            enabled = True
+            if config_manager:
+                enabled = config_manager.get_setting('ui.show_toasts', True)
+            if not enabled:
+                return
+            title = tool.get("title", tool.get("id", "Tool"))
+            if success:
+                ToastManager.show_success(title, message)
+            else:
+                ToastManager.show_error(title, message)
+        except Exception:
+            pass
 
     @staticmethod
     def _tool_matches_query(tool: Dict[str, Any], section_title: str, query: str) -> bool:
