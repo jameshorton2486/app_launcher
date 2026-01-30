@@ -24,6 +24,10 @@ from src.utils.constants import SETTINGS_FILE
 from src.utils.tool_usage import ToolUsageStore
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
+try:
+    from src.components.toast import ToastManager
+except Exception:
+    ToastManager = None
 
 # Try to import logger
 try:
@@ -352,43 +356,32 @@ class SettingsTab(ctk.CTkScrollableFrame):
         stats_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         stats_frame.pack(fill='x', pady=8)
 
-        usage_store = ToolUsageStore()
-        stats = usage_store.get_stats()
-        total_tools = stats.get("total_tools_run", 0)
-        total_space_mb = float(stats.get("total_space_freed_mb", 0))
-        total_space_gb = total_space_mb / 1024
-        last_cleanup = stats.get("last_full_cleanup")
-        last_cleanup_display = "Never"
-        if last_cleanup:
-            try:
-                last_cleanup_display = datetime.fromisoformat(last_cleanup).strftime("%B %d, %Y")
-            except Exception:
-                last_cleanup_display = "Unknown"
-
-        tool_registry = ToolRegistry()
-        tool_registry.load_tools(TOOLS_FILE)
-        most_used_id, most_used_count = usage_store.get_most_used()
-        most_used_name = most_used_id
-        if most_used_id:
-            tool = tool_registry.get_tool_by_id(most_used_id) or {}
-            most_used_name = tool.get("title", most_used_id)
-        else:
-            most_used_name = "N/A"
-
-        stats_text = (
-            f"Total tools run: {total_tools}\n"
-            f"Total space freed: {total_space_gb:.1f} GB\n"
-            f"Most used tool: {most_used_name} ({most_used_count} runs)\n"
-            f"Last full cleanup: {last_cleanup_display}"
-        )
         ctk.CTkLabel(
             stats_frame,
-            text=stats_text,
+            text="Usage Statistics",
+            font=('Segoe UI', 12, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        ).pack(anchor='w')
+
+        ctk.CTkLabel(
+            stats_frame,
+            text="─" * 24,
+            font=('Segoe UI', 10),
+            text_color=COLORS['text_secondary'],
+            anchor='w'
+        ).pack(anchor='w', pady=(2, 6))
+
+        self.usage_stats_label = ctk.CTkLabel(
+            stats_frame,
+            text="",
             font=('Segoe UI', 11),
             text_color=COLORS['text_secondary'],
             justify='left',
             anchor='w'
-        ).pack(anchor='w')
+        )
+        self.usage_stats_label.pack(anchor='w')
+        self._refresh_usage_stats()
 
         links_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         links_frame.pack(fill='x', pady=8)
@@ -425,6 +418,15 @@ class SettingsTab(ctk.CTkScrollableFrame):
 
         ctk.CTkButton(
             actions_frame,
+            text="Reset Statistics",
+            width=160,
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.reset_usage_stats
+        ).pack(side='left', padx=(0, 8))
+
+        ctk.CTkButton(
+            actions_frame,
             text="Reset to Defaults",
             width=160,
             fg_color=COLORS['accent_primary'],
@@ -449,6 +451,63 @@ class SettingsTab(ctk.CTkScrollableFrame):
             hover_color=COLORS['accent_secondary'],
             command=self.import_settings
         ).pack(side='left')
+
+    def _refresh_usage_stats(self):
+        usage_store = ToolUsageStore()
+        stats = usage_store.get_stats()
+        total_tools = stats.get("total_tools_run", 0)
+        total_space_mb = usage_store.get_total_freed_mb()
+        total_space_gb = total_space_mb / 1024
+
+        last_cleanup = stats.get("last_full_cleanup")
+        last_cleanup_display = "Never"
+        if last_cleanup:
+            try:
+                last_cleanup_display = datetime.fromisoformat(last_cleanup).strftime("%B %d, %Y")
+            except Exception:
+                last_cleanup_display = "Unknown"
+
+        first_launch = stats.get("first_launch")
+        first_launch_display = "Unknown"
+        if first_launch:
+            try:
+                first_launch_display = datetime.fromisoformat(first_launch).strftime("%B %d, %Y")
+            except Exception:
+                first_launch_display = "Unknown"
+
+        tool_registry = ToolRegistry()
+        tool_registry.load_tools(TOOLS_FILE)
+        most_used_id, most_used_count = usage_store.get_most_used()
+        most_used_name = "N/A"
+        if most_used_id:
+            tool = tool_registry.get_tool_by_id(most_used_id) or {}
+            most_used_name = tool.get("title", most_used_id)
+            most_used_name = f"{most_used_name} ({most_used_count} runs)"
+
+        stats_text = (
+            f"Total tools run:        {total_tools}\n"
+            f"Total space freed:      {total_space_gb:.1f} GB\n"
+            f"Most used tool:         {most_used_name}\n"
+            f"Last full cleanup:      {last_cleanup_display}\n"
+            f"App first launched:     {first_launch_display}"
+        )
+        if hasattr(self, "usage_stats_label"):
+            self.usage_stats_label.configure(text=stats_text)
+
+    def reset_usage_stats(self):
+        import tkinter.messagebox as messagebox
+        confirm = messagebox.askyesno(
+            "Reset Usage Statistics",
+            "Reset all usage statistics? This cannot be undone."
+        )
+        if not confirm:
+            return
+
+        usage_store = ToolUsageStore()
+        usage_store.reset_stats(keep_first_launch=True)
+        self._refresh_usage_stats()
+        if ToastManager:
+            ToastManager.show_success("Usage Statistics", "Usage statistics have been reset.")
 
     def _add_checkbox(self, parent, label, variable):
         checkbox = ctk.CTkCheckBox(

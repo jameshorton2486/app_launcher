@@ -31,10 +31,12 @@ class ToolUsageStore:
         default_data = {
             "tool_runs": {},
             "last_full_cleanup": None,
+            "first_launch": None,
             "total_space_freed_mb": 0,
             "total_tools_run": 0
         }
         if not os.path.exists(USAGE_FILE):
+            default_data["first_launch"] = datetime.utcnow().isoformat()
             self._save(default_data)
             return default_data
         try:
@@ -42,7 +44,11 @@ class ToolUsageStore:
                 data = json.load(handle)
             if not isinstance(data, dict):
                 return default_data
-            return {**default_data, **data}
+            merged = {**default_data, **data}
+            if not merged.get("first_launch"):
+                merged["first_launch"] = datetime.utcnow().isoformat()
+                self._save(merged)
+            return merged
         except Exception as exc:
             logger.error(f"Failed to load tool usage: {exc}")
             return default_data
@@ -61,12 +67,16 @@ class ToolUsageStore:
             "last_run": None,
             "run_count": 0,
             "last_result": None,
-            "last_message": ""
+            "last_message": "",
+            "last_freed_mb": 0.0,
+            "total_freed_mb": 0.0
         })
         run_entry["last_run"] = now
         run_entry["run_count"] = int(run_entry.get("run_count", 0)) + 1
         run_entry["last_result"] = "success" if success else "error"
         run_entry["last_message"] = message
+        run_entry["last_freed_mb"] = float(freed_mb or 0.0)
+        run_entry["total_freed_mb"] = float(run_entry.get("total_freed_mb", 0.0)) + float(freed_mb or 0.0)
         self.data["tool_runs"][tool_id] = run_entry
         self.data["total_tools_run"] = int(self.data.get("total_tools_run", 0)) + 1
         if freed_mb > 0:
@@ -85,6 +95,32 @@ class ToolUsageStore:
 
     def get_stats(self) -> Dict[str, Any]:
         return self.data
+
+    def get_total_freed_mb(self) -> float:
+        total = 0.0
+        for entry in self.data.get("tool_runs", {}).values():
+            try:
+                total += float(entry.get("total_freed_mb", 0.0))
+            except Exception:
+                continue
+        if total <= 0:
+            try:
+                return float(self.data.get("total_space_freed_mb", 0.0))
+            except Exception:
+                return 0.0
+        return total
+
+    def reset_stats(self, keep_first_launch: bool = True):
+        first_launch = self.data.get("first_launch") if keep_first_launch else None
+        default_data = {
+            "tool_runs": {},
+            "last_full_cleanup": None,
+            "first_launch": first_launch or datetime.utcnow().isoformat(),
+            "total_space_freed_mb": 0,
+            "total_tools_run": 0
+        }
+        self.data = default_data
+        self._save(self.data)
 
     def get_most_used(self) -> Tuple[str, int]:
         most_tool = ""
