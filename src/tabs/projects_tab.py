@@ -318,6 +318,8 @@ class ProjectsTab(ctk.CTkFrame):
             project_id: Project ID or name
             status: Status dictionary
         """
+        if not self.winfo_exists():
+            return
         # Update the corresponding card
         for card in self.cards:
             card_project_id = card.project.get('id') or card.project.get('name', 'unknown')

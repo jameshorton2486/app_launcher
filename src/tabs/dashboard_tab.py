@@ -406,6 +406,8 @@ class DashboardTab(ctk.CTkScrollableFrame):
         threading.Thread(target=func, daemon=True).start()
 
     def _refresh_system_stats(self):
+        if not self.winfo_exists():
+            return
         if not psutil:
             self._set_system_stat("ram", "--", 0)
             self._set_system_stat("cpu", "--", 0)

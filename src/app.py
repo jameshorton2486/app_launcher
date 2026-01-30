@@ -133,6 +133,7 @@ class AppLauncher(ctk.CTk):
             # Tray icon
             self.tray_icon = None
             self._first_minimize = True  # Track first minimize for notification
+            self._is_shutting_down = False
             
             # Tab instances (will be created in setup_ui)
             self.projects_tab = None
@@ -243,6 +244,8 @@ class AppLauncher(ctk.CTk):
     def _save_window_settings(self):
         """Save window settings to config"""
         try:
+            if self._is_shutting_down:
+                return
             self.config_manager.save_settings(self.config_manager.settings)
         except Exception as e:
             logger.warning(f"Failed to save window settings: {e}")
@@ -476,6 +479,8 @@ class AppLauncher(ctk.CTk):
             item.set_collapsed(not self._sidebar_expanded)
 
     def _update_ram_usage(self):
+        if self._is_shutting_down:
+            return
         try:
             ram_percent = psutil.virtual_memory().percent
             self.ram_label.configure(text=f"RAM: {ram_percent:.0f}%")
@@ -726,6 +731,8 @@ class AppLauncher(ctk.CTk):
         """Start monitoring git status for status bar summary"""
         def check_git_status():
             try:
+                if self._is_shutting_down:
+                    return
                 from src.services.git_service import GitService
                 git_service = GitService()
                 projects = self.config_manager.load_projects()
@@ -748,6 +755,8 @@ class AppLauncher(ctk.CTk):
         def monitor():
             import time
             while True:
+                if self._is_shutting_down:
+                    return
                 time.sleep(30)  # Check every 30 seconds
                 try:
                     self.after(0, check_git_status)
@@ -807,6 +816,14 @@ class AppLauncher(ctk.CTk):
     
     def quit_app(self):
         """Quit the application completely"""
+        self._is_shutting_down = True
+        # Stop git status monitoring if active
+        try:
+            if self.projects_tab and hasattr(self.projects_tab, 'git_service'):
+                self.projects_tab.git_service.stop_status_monitoring()
+        except Exception as e:
+            logger.debug(f"Error stopping git monitoring: {e}")
+
         # Stop tray icon first
         if self.tray_icon:
             try:
