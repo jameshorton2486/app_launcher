@@ -1,0 +1,55 @@
+{
+  "ccleaner": [
+    "C:\\Program Files\\CCleaner\\CCleaner64.exe",
+    "C:\\Program Files (x86)\\CCleaner\\CCleaner.exe"
+  ],
+  "bleachbit": [
+    "C:\\Program Files (x86)\\BleachBit\\bleachbit.exe",
+    "C:\\Program Files\\BleachBit\\bleachbit.exe"
+  ],
+  "wise_memory": [
+    "C:\\Program Files (x86)\\Wise\\Wise Memory Optimizer\\WiseMemoryOptimizer.exe"
+  ],
+  "treesize": [
+    "C:\\Program Files\\TreeSize Free\\TreeSizeFree.exe",
+    "C:\\Program Files (x86)\\TreeSize Free\\TreeSizeFree.exe"
+  ],
+  "everything": [
+    "C:\\Program Files\\Everything\\Everything.exe",
+    "C:\\Program Files (x86)\\Everything\\Everything.exe"
+  ],
+  "bcuninstaller": [
+    "C:\\Program Files\\BCUninstaller\\BCUninstaller.exe"
+  ],
+  "crystaldiskinfo": [
+    "C:\\Program Files\\CrystalDiskInfo\\DiskInfo64.exe",
+    "C:\\Program Files (x86)\\CrystalDiskInfo\\DiskInfo.exe"
+  ],
+  "hwinfo": [
+    "C:\\Program Files\\HWiNFO64\\HWiNFO64.exe",
+    "C:\\Program Files (x86)\\HWiNFO32\\HWiNFO32.exe"
+  ],
+  "cpuz": [
+    "C:\\Program Files\\CPUID\\CPU-Z\\cpuz_x64.exe",
+    "C:\\Program Files (x86)\\CPUID\\CPU-Z\\cpuz.exe"
+  ],
+  "autoruns": [
+    "C:\\Program Files\\Autoruns\\Autoruns64.exe"
+  ],
+  "github_desktop": [
+    "%LOCALAPPDATA%\\GitHubDesktop\\GitHubDesktop.exe"
+  ],
+  "windows_terminal": [
+    "%LOCALAPPDATA%\\Microsoft\\WindowsApps\\wt.exe"
+  ],
+  "cursor": [
+    "%LOCALAPPDATA%\\Programs\\cursor\\Cursor.exe"
+  ],
+  "vscode": [
+    "%LOCALAPPDATA%\\Programs\\Microsoft VS Code\\Code.exe",
+    "C:\\Program Files\\Microsoft VS Code\\Code.exe"
+  ],
+  "process_lasso": [
+    "C:\\Program Files\\Process Lasso\\ProcessLasso.exe"
+  ]
+}
