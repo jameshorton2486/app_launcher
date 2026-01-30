@@ -1,0 +1,350 @@
+"""
+Settings Tab
+Embedded settings management UI for sidebar navigation
+"""
+
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import filedialog, colorchooser
+import sys
+import os
+
+# Add parent directory to path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(os.path.dirname(current_dir))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from src.theme import COLORS
+
+
+class SettingsTab(ctk.CTkScrollableFrame):
+    """Settings tab for application configuration"""
+
+    def __init__(self, parent, config_manager, on_save=None):
+        """
+        Initialize settings tab
+
+        Args:
+            parent: Parent widget
+            config_manager: ConfigManager instance
+            on_save: Callback when settings are saved
+        """
+        super().__init__(
+            parent,
+            fg_color=COLORS['bg_primary'],
+            corner_radius=0
+        )
+
+        self.config_manager = config_manager
+        self.on_save = on_save
+        self.settings = config_manager.settings.copy()
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Set up the settings UI"""
+        # GENERAL Section
+        self.create_section(self, "GENERAL")
+
+        # Start with Windows
+        self.start_with_windows = ctk.BooleanVar(value=self.settings.get('window', {}).get('start_with_windows', False))
+        ctk.CTkCheckBox(
+            self,
+            text="Start with Windows",
+            variable=self.start_with_windows,
+            font=('Segoe UI', 11)
+        ).pack(fill='x', pady=5)
+
+        # Minimize to tray
+        self.minimize_to_tray = ctk.BooleanVar(value=self.settings.get('window', {}).get('minimize_to_tray', True))
+        ctk.CTkCheckBox(
+            self,
+            text="Minimize to system tray on close",
+            variable=self.minimize_to_tray,
+            font=('Segoe UI', 11)
+        ).pack(fill='x', pady=5)
+
+        # Start minimized
+        self.start_minimized = ctk.BooleanVar(value=self.settings.get('window', {}).get('start_minimized', False))
+        ctk.CTkCheckBox(
+            self,
+            text="Start minimized",
+            variable=self.start_minimized,
+            font=('Segoe UI', 11)
+        ).pack(fill='x', pady=5)
+
+        # HOTKEY Section
+        self.create_section(self, "HOTKEY")
+
+        hotkey_frame = ctk.CTkFrame(self, fg_color='transparent')
+        hotkey_frame.pack(fill='x', pady=5)
+
+        ctk.CTkLabel(hotkey_frame, text="Global hotkey:", font=('Segoe UI', 11)).pack(side='left', padx=(0, 10))
+        self.hotkey_entry = ctk.CTkEntry(hotkey_frame, width=200, font=('Segoe UI', 11))
+        self.hotkey_entry.pack(side='left', padx=(0, 10))
+        current_hotkey = self.settings.get('window', {}).get('global_hotkey', 'win+shift+l')
+        hotkey_display = current_hotkey.replace('+', ' + ').replace('windows', 'Win').replace('win', 'Win')
+        self.hotkey_entry.insert(0, hotkey_display)
+        self.hotkey_entry.configure(state='readonly')
+
+        self.change_hotkey_btn = ctk.CTkButton(
+            hotkey_frame,
+            text="Change Hotkey",
+            width=120,
+            command=self.change_hotkey
+        )
+        self.change_hotkey_btn.pack(side='left')
+
+        # PATHS Section
+        self.create_section(self, "PATHS")
+        self.create_path_field(self, "Downloads folder:", 'paths.downloads_folder')
+        self.create_path_field(self, "Screenshots folder:", 'paths.screenshots_folder',
+                              default='C:\\Users\\james\\Documents\\Screenshots')
+
+        # EXTERNAL TOOLS Section
+        self.create_section(self, "EXTERNAL TOOLS")
+        self.create_path_field(self, "CCleaner:", 'external_tools.ccleaner')
+        self.create_path_field(self, "Wise Memory Cleaner:", 'external_tools.wise_memory_cleaner')
+        self.create_path_field(self, "Cursor:", 'external_tools.cursor')
+        self.create_path_field(self, "VS Code:", 'external_tools.vscode')
+        self.create_path_field(self, "PyCharm:", 'external_tools.pycharm')
+
+        # THEME Section
+        self.create_section(self, "THEME")
+
+        theme_frame = ctk.CTkFrame(self, fg_color='transparent')
+        theme_frame.pack(fill='x', pady=5)
+
+        ctk.CTkLabel(theme_frame, text="Mode:", font=('Segoe UI', 11)).pack(side='left', padx=(0, 10))
+        self.theme_mode = ctk.CTkOptionMenu(
+            theme_frame,
+            values=['dark', 'light', 'system'],
+            width=150,
+            font=('Segoe UI', 11)
+        )
+        self.theme_mode.pack(side='left')
+        self.theme_mode.set(self.settings.get('theme', {}).get('mode', 'dark'))
+
+        color_frame = ctk.CTkFrame(self, fg_color='transparent')
+        color_frame.pack(fill='x', pady=5)
+
+        ctk.CTkLabel(color_frame, text="Accent Color:", font=('Segoe UI', 11)).pack(side='left', padx=(0, 10))
+        self.color_preview = ctk.CTkFrame(color_frame, width=50, height=30,
+                                          fg_color=self.settings.get('theme', {}).get('accent_color', '#6c5ce7'))
+        self.color_preview.pack(side='left', padx=(0, 10))
+
+        self.accent_color = self.settings.get('theme', {}).get('accent_color', '#6c5ce7')
+
+        ctk.CTkButton(
+            color_frame,
+            text="Pick",
+            width=80,
+            command=self.pick_color
+        ).pack(side='left')
+
+        # Buttons
+        button_frame = ctk.CTkFrame(self, fg_color='transparent')
+        button_frame.pack(fill='x', pady=(20, 20))
+
+        reset_btn = ctk.CTkButton(
+            button_frame,
+            text="Reset",
+            width=120,
+            height=35,
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.reset_fields
+        )
+        reset_btn.pack(side='right', padx=(10, 0))
+
+        save_btn = ctk.CTkButton(
+            button_frame,
+            text="Save",
+            width=120,
+            height=35,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.save
+        )
+        save_btn.pack(side='right')
+
+    def create_section(self, parent, title):
+        """Create a section header"""
+        section_label = ctk.CTkLabel(
+            parent,
+            text=title,
+            font=('Segoe UI', 14, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        )
+        section_label.pack(fill='x', pady=(20, 10))
+
+    def create_path_field(self, parent, label_text, setting_key, default=''):
+        """Create a path input field with browse button"""
+        path_frame = ctk.CTkFrame(parent, fg_color='transparent')
+        path_frame.pack(fill='x', pady=5)
+
+        ctk.CTkLabel(path_frame, text=label_text, font=('Segoe UI', 11), width=150, anchor='w').pack(side='left', padx=(0, 10))
+
+        keys = setting_key.split('.')
+        value = self.settings
+        for key in keys:
+            value = value.get(key, {})
+        current_value = value if isinstance(value, str) else default
+
+        entry = ctk.CTkEntry(path_frame, width=350, font=('Segoe UI', 11))
+        entry.pack(side='left', padx=(0, 10))
+        entry.insert(0, current_value)
+
+        if not hasattr(self, 'path_entries'):
+            self.path_entries = {}
+        self.path_entries[setting_key] = entry
+
+        ctk.CTkButton(
+            path_frame,
+            text="Browse",
+            width=80,
+            command=lambda: self.browse_path(entry)
+        ).pack(side='left')
+
+    def browse_path(self, entry):
+        """Browse for directory or file"""
+        current = entry.get()
+        if os.path.isdir(current) if current else False:
+            path = filedialog.askdirectory(initialdir=current)
+        else:
+            path = filedialog.askopenfilename(initialdir=os.path.dirname(current) if current else os.path.expanduser('~'))
+
+        if path:
+            entry.delete(0, 'end')
+            entry.insert(0, path)
+
+    def change_hotkey(self):
+        """Open hotkey capture dialog"""
+        from src.components.hotkey_capture_dialog import HotkeyCaptureDialog
+
+        current = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '')
+        dialog = HotkeyCaptureDialog(self, current)
+        self.wait_window(dialog)
+
+        if dialog.result:
+            self.hotkey_entry.configure(state='normal')
+            self.hotkey_entry.delete(0, 'end')
+            hotkey_display = dialog.result.replace('+', ' + ').replace('windows', 'Win').replace('win', 'Win')
+            self.hotkey_entry.insert(0, hotkey_display)
+            self.hotkey_entry.configure(state='readonly')
+
+    def pick_color(self):
+        """Pick accent color"""
+        color = colorchooser.askcolor(initialcolor=self.accent_color)[1]
+        if color:
+            self.accent_color = color
+            self.color_preview.configure(fg_color=color)
+
+    def validate_paths(self) -> tuple[bool, str]:
+        """Validate all path entries"""
+        errors = []
+
+        directory_paths = [
+            ('paths.downloads_folder', 'Downloads folder'),
+            ('paths.screenshots_folder', 'Screenshots folder')
+        ]
+
+        for key, name in directory_paths:
+            entry = self.path_entries.get(key)
+            if entry:
+                path = entry.get().strip()
+                if path:
+                    if not os.path.exists(path):
+                        errors.append(f"{name} path does not exist: {path}")
+                    elif not os.path.isdir(path):
+                        errors.append(f"{name} is not a directory: {path}")
+
+        tool_paths = [
+            ('external_tools.ccleaner', 'CCleaner'),
+            ('external_tools.wise_memory_cleaner', 'Wise Memory Cleaner'),
+            ('external_tools.cursor', 'Cursor'),
+            ('external_tools.vscode', 'VS Code'),
+            ('external_tools.pycharm', 'PyCharm')
+        ]
+
+        for key, name in tool_paths:
+            entry = self.path_entries.get(key)
+            if entry:
+                path = entry.get().strip()
+                if path:
+                    if not os.path.exists(path):
+                        errors.append(f"{name} path does not exist: {path}")
+                    elif not os.path.isfile(path):
+                        errors.append(f"{name} is not a file: {path}")
+
+        if errors:
+            return False, "\n".join(errors)
+        return True, ""
+
+    def save(self):
+        """Save settings"""
+        valid, error_msg = self.validate_paths()
+        if not valid:
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Validation Error", f"Please fix the following errors:\n\n{error_msg}")
+            return
+
+        self.settings['window']['start_with_windows'] = self.start_with_windows.get()
+        self.settings['window']['minimize_to_tray'] = self.minimize_to_tray.get()
+        self.settings['window']['start_minimized'] = self.start_minimized.get()
+        hotkey_value = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '').lower()
+        self.settings['window']['global_hotkey'] = hotkey_value
+        self.settings['theme']['mode'] = self.theme_mode.get()
+        self.settings['theme']['accent_color'] = self.accent_color
+
+        for key, entry in getattr(self, 'path_entries', {}).items():
+            keys = key.split('.')
+            value = self.settings
+            for k in keys[:-1]:
+                if k not in value:
+                    value[k] = {}
+                value = value[k]
+            value[keys[-1]] = entry.get()
+
+        self.config_manager.save_settings(self.settings)
+
+        try:
+            from src.theme import apply_theme
+            theme_mode = self.settings.get('theme', {}).get('mode', 'dark')
+            accent_color = self.settings.get('theme', {}).get('accent_color', '#6c5ce7')
+            apply_theme(self.master, mode=theme_mode, accent_color=accent_color)
+        except Exception as e:
+            import tkinter.messagebox as messagebox
+            messagebox.showwarning("Theme Warning", f"Could not apply theme changes: {e}")
+
+        if self.on_save:
+            self.on_save(self.settings)
+
+    def reset_fields(self):
+        """Reload settings from config and reset fields"""
+        self.settings = self.config_manager.settings.copy()
+
+        self.start_with_windows.set(self.settings.get('window', {}).get('start_with_windows', False))
+        self.minimize_to_tray.set(self.settings.get('window', {}).get('minimize_to_tray', True))
+        self.start_minimized.set(self.settings.get('window', {}).get('start_minimized', False))
+
+        current_hotkey = self.settings.get('window', {}).get('global_hotkey', 'win+shift+l')
+        hotkey_display = current_hotkey.replace('+', ' + ').replace('windows', 'Win').replace('win', 'Win')
+        self.hotkey_entry.configure(state='normal')
+        self.hotkey_entry.delete(0, 'end')
+        self.hotkey_entry.insert(0, hotkey_display)
+        self.hotkey_entry.configure(state='readonly')
+
+        self.theme_mode.set(self.settings.get('theme', {}).get('mode', 'dark'))
+        self.accent_color = self.settings.get('theme', {}).get('accent_color', '#6c5ce7')
+        self.color_preview.configure(fg_color=self.accent_color)
+
+        for key, entry in getattr(self, 'path_entries', {}).items():
+            keys = key.split('.')
+            value = self.settings
+            for k in keys:
+                value = value.get(k, {})
+            entry.delete(0, 'end')
+            entry.insert(0, value if isinstance(value, str) else "")
