@@ -17,6 +17,7 @@ if parent_dir not in sys.path:
 from src.theme import COLORS
 from src.services.cleanup_service import CleanupService
 from src.components.utility_button import UtilityButton
+from src.utils.tool_registry import ToolRegistry
 
 # Try to import logger
 try:
@@ -46,78 +47,36 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
         
         self.config_manager = config_manager
         self.cleanup_service = CleanupService()
+        self.tool_registry = ToolRegistry()
         
         self.setup_ui()
     
     def setup_ui(self):
         """Set up the utilities tab UI"""
-        # QUICK CLEANUP section
-        self.create_section("QUICK CLEANUP", [
-            ("🗑️", "Empty Recycle Bin", "", 
-             lambda: self.cleanup_service.empty_recycle_bin(),
-             "Permanently delete all files in the Recycle Bin"),
-            ("🧹", "Clear Temp Files", "",
-             lambda: self.cleanup_service.clear_temp_files(),
-             "Delete temporary files from %temp% and Windows\\Temp"),
-            ("🔄", "Flush DNS", "",
-             lambda: self.cleanup_service.flush_dns(),
-             "Clear the DNS resolver cache"),
-            ("📁", "Clear Prefetch", "",
-             lambda: self.cleanup_service.clear_prefetch(),
-             "Clear Windows Prefetch folder (requires admin)"),
-        ])
-        
-        # MEMORY & PERFORMANCE section
-        self.create_section("MEMORY & PERFORMANCE", [
-            ("🧠", "Clear RAM Standby", "",
-             lambda: self.cleanup_service.clear_standby_ram(),
-             "Free up standby memory"),
-            ("💾", "Disk Cleanup", "",
-             lambda: self.cleanup_service.run_disk_cleanup(),
-             "Launch Windows Disk Cleanup tool"),
-            ("⚡", "Defrag/Optimize", "",
-             lambda: self.cleanup_service.optimize_drive("C:"),
-             "Optimize and defragment drive C:"),
-            ("🔄", "Restart Explorer", "",
-             lambda: self.cleanup_service.restart_explorer(),
-             "Restart Windows Explorer process"),
-        ])
-        
-        # EXTERNAL TOOLS section
-        self.create_section("EXTERNAL TOOLS", [
-            ("🧽", "Open CCleaner", "",
-             lambda: self.cleanup_service.launch_ccleaner(self.config_manager),
-             "Launch CCleaner (configure path in settings)"),
-            ("🧠", "Open Wise Memory", "",
-             lambda: self.cleanup_service.launch_wise_memory_cleaner(self.config_manager),
-             "Launch Wise Memory Cleaner (configure path in settings)"),
-            ("🏪", "Reset MS Store", "",
-             lambda: self.cleanup_service.reset_ms_store(),
-             "Reset Microsoft Store cache"),
-        ])
-        
-        # NETWORK section
-        self.create_section("NETWORK", [
-            ("🌐", "Reset TCP/IP", "",
-             lambda: self.cleanup_service.reset_network(),
-             "Reset network stack (requires admin, restart recommended)"),
-            ("🔌", "Release/Renew IP", "",
-             lambda: self.cleanup_service.release_renew_ip(),
-             "Release and renew IP address"),
-            ("📶", "Network Stats", "",
-             lambda: self.show_network_stats(),
-             "Display network statistics"),
-        ])
-        
-        # WINDOWS UPDATE section
-        self.create_section("WINDOWS UPDATE", [
-            ("🗑️", "Clear Update Cache", "",
-             lambda: self.cleanup_service.clear_windows_update_cache(),
-             "Clear Windows Update cache (requires admin)"),
-            ("⏸️", "Pause Updates", "(7 days)",
-             lambda: self.cleanup_service.pause_windows_updates(7),
-             "Pause Windows Updates for 7 days"),
-        ])
+        tools_config = self.config_manager.tools or {}
+        services = {
+            "cleanup_service": self.cleanup_service,
+            "utilities_tab": self
+        }
+        context = {"config_manager": self.config_manager}
+        self.tool_registry.register_from_config(tools_config, services, context)
+
+        for section in tools_config.get("sections", []):
+            buttons = []
+            for tool in section.get("tools", []):
+                tool_id = tool.get("id")
+                handler = self.tool_registry.get_handler(tool_id)
+                if not handler:
+                    logger.warning(f"Tool handler missing for {tool_id}")
+                    handler = lambda: (False, "Tool not configured")
+                buttons.append((
+                    tool.get("icon", ""),
+                    tool.get("title", ""),
+                    tool.get("subtitle", ""),
+                    handler,
+                    tool.get("tooltip", "")
+                ))
+            self.create_section(section.get("title", ""), buttons)
     
     def create_section(self, title: str, buttons: list):
         """

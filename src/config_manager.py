@@ -18,7 +18,7 @@ parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from src.utils.constants import CONFIG_DIR, SETTINGS_FILE, PROJECTS_FILE, FILE_PATTERNS_FILE
+from src.utils.constants import CONFIG_DIR, SETTINGS_FILE, PROJECTS_FILE, FILE_PATTERNS_FILE, TOOLS_FILE
 from src.utils.helpers import ensure_dir
 
 # Try to import logger, but don't fail if it doesn't exist yet
@@ -52,6 +52,7 @@ class ConfigManager:
         self.settings = {}
         self.projects = []
         self.file_patterns = {}
+        self.tools = {}
         
         self.observers = []
         self._load_all()
@@ -62,6 +63,7 @@ class ConfigManager:
         self.settings = self.load_settings()
         self.projects = self.load_projects()
         self.file_patterns = self.load_file_patterns()
+        self.tools = self.load_tools()
     
     def _setup_watchers(self):
         """Set up file watchers for config changes"""
@@ -83,6 +85,8 @@ class ConfigManager:
             self.projects = self.load_projects()
         elif file_path.endswith('file_patterns.json'):
             self.file_patterns = self.load_file_patterns()
+        elif file_path.endswith('tools.json'):
+            self.tools = self.load_tools()
     
     def load_json(self, file_path: str, default: Any = None) -> Any:
         """
@@ -270,6 +274,182 @@ class ConfigManager:
         """Save file_patterns.json"""
         self.file_patterns = patterns
         self.save_json(FILE_PATTERNS_FILE, patterns)
+
+    def load_tools(self) -> Dict[str, Any]:
+        """Load tools.json with validation"""
+        default_tools = {
+            "sections": [
+                {
+                    "id": "quick_cleanup",
+                    "title": "QUICK CLEANUP",
+                    "tools": [
+                        {
+                            "id": "empty_recycle_bin",
+                            "icon": "🗑️",
+                            "title": "Empty Recycle Bin",
+                            "subtitle": "",
+                            "tooltip": "Permanently delete all files in the Recycle Bin",
+                            "handler": {"service": "cleanup_service", "method": "empty_recycle_bin"}
+                        },
+                        {
+                            "id": "clear_temp_files",
+                            "icon": "🧹",
+                            "title": "Clear Temp Files",
+                            "subtitle": "",
+                            "tooltip": "Delete temporary files from %temp% and Windows\\Temp",
+                            "handler": {"service": "cleanup_service", "method": "clear_temp_files"}
+                        },
+                        {
+                            "id": "flush_dns",
+                            "icon": "🔄",
+                            "title": "Flush DNS",
+                            "subtitle": "",
+                            "tooltip": "Clear the DNS resolver cache",
+                            "handler": {"service": "cleanup_service", "method": "flush_dns"}
+                        },
+                        {
+                            "id": "clear_prefetch",
+                            "icon": "📁",
+                            "title": "Clear Prefetch",
+                            "subtitle": "",
+                            "tooltip": "Clear Windows Prefetch folder (requires admin)",
+                            "handler": {"service": "cleanup_service", "method": "clear_prefetch"}
+                        }
+                    ]
+                },
+                {
+                    "id": "memory_performance",
+                    "title": "MEMORY & PERFORMANCE",
+                    "tools": [
+                        {
+                            "id": "clear_standby_ram",
+                            "icon": "🧠",
+                            "title": "Clear RAM Standby",
+                            "subtitle": "",
+                            "tooltip": "Free up standby memory",
+                            "handler": {"service": "cleanup_service", "method": "clear_standby_ram"}
+                        },
+                        {
+                            "id": "disk_cleanup",
+                            "icon": "💾",
+                            "title": "Disk Cleanup",
+                            "subtitle": "",
+                            "tooltip": "Launch Windows Disk Cleanup tool",
+                            "handler": {"service": "cleanup_service", "method": "run_disk_cleanup"}
+                        },
+                        {
+                            "id": "defrag_optimize",
+                            "icon": "⚡",
+                            "title": "Defrag/Optimize",
+                            "subtitle": "",
+                            "tooltip": "Optimize and defragment drive C:",
+                            "handler": {"service": "cleanup_service", "method": "optimize_drive", "args": ["C:"]}
+                        },
+                        {
+                            "id": "restart_explorer",
+                            "icon": "🔄",
+                            "title": "Restart Explorer",
+                            "subtitle": "",
+                            "tooltip": "Restart Windows Explorer process",
+                            "handler": {"service": "cleanup_service", "method": "restart_explorer"}
+                        }
+                    ]
+                },
+                {
+                    "id": "external_tools",
+                    "title": "EXTERNAL TOOLS",
+                    "tools": [
+                        {
+                            "id": "open_ccleaner",
+                            "icon": "🧽",
+                            "title": "Open CCleaner",
+                            "subtitle": "",
+                            "tooltip": "Launch CCleaner (configure path in settings)",
+                            "handler": {"service": "cleanup_service", "method": "launch_ccleaner", "args": ["$config_manager"]}
+                        },
+                        {
+                            "id": "open_wise_memory",
+                            "icon": "🧠",
+                            "title": "Open Wise Memory",
+                            "subtitle": "",
+                            "tooltip": "Launch Wise Memory Cleaner (configure path in settings)",
+                            "handler": {"service": "cleanup_service", "method": "launch_wise_memory_cleaner", "args": ["$config_manager"]}
+                        },
+                        {
+                            "id": "reset_ms_store",
+                            "icon": "🏪",
+                            "title": "Reset MS Store",
+                            "subtitle": "",
+                            "tooltip": "Reset Microsoft Store cache",
+                            "handler": {"service": "cleanup_service", "method": "reset_ms_store"}
+                        }
+                    ]
+                },
+                {
+                    "id": "network",
+                    "title": "NETWORK",
+                    "tools": [
+                        {
+                            "id": "reset_tcpip",
+                            "icon": "🌐",
+                            "title": "Reset TCP/IP",
+                            "subtitle": "",
+                            "tooltip": "Reset network stack (requires admin, restart recommended)",
+                            "handler": {"service": "cleanup_service", "method": "reset_network"}
+                        },
+                        {
+                            "id": "release_renew_ip",
+                            "icon": "🔌",
+                            "title": "Release/Renew IP",
+                            "subtitle": "",
+                            "tooltip": "Release and renew IP address",
+                            "handler": {"service": "cleanup_service", "method": "release_renew_ip"}
+                        },
+                        {
+                            "id": "network_stats",
+                            "icon": "📶",
+                            "title": "Network Stats",
+                            "subtitle": "",
+                            "tooltip": "Display network statistics",
+                            "handler": {"service": "utilities_tab", "method": "show_network_stats"}
+                        }
+                    ]
+                },
+                {
+                    "id": "windows_update",
+                    "title": "WINDOWS UPDATE",
+                    "tools": [
+                        {
+                            "id": "clear_update_cache",
+                            "icon": "🗑️",
+                            "title": "Clear Update Cache",
+                            "subtitle": "",
+                            "tooltip": "Clear Windows Update cache (requires admin)",
+                            "handler": {"service": "cleanup_service", "method": "clear_windows_update_cache"}
+                        },
+                        {
+                            "id": "pause_updates",
+                            "icon": "⏸️",
+                            "title": "Pause Updates",
+                            "subtitle": "(7 days)",
+                            "tooltip": "Pause Windows Updates for 7 days",
+                            "handler": {"service": "cleanup_service", "method": "pause_windows_updates", "args": [7]}
+                        }
+                    ]
+                }
+            ]
+        }
+
+        tools = self.load_json(TOOLS_FILE, default_tools)
+
+        if self._validate_tools_schema(tools):
+            if not os.path.exists(TOOLS_FILE):
+                self.save_json(TOOLS_FILE, tools)
+                logger.info(f"Created default tools file: {TOOLS_FILE}")
+            return tools
+
+        logger.warning("Tools validation failed, using defaults")
+        return default_tools
     
     def _merge_dicts(self, default: Dict, user: Dict) -> Dict:
         """Recursively merge user dict into default dict"""
@@ -408,6 +588,38 @@ class ConfigManager:
             if key not in patterns_dict:
                 logger.warning(f"Missing pattern category: {key}")
         
+        return True
+
+    def _validate_tools_schema(self, tools: Dict[str, Any]) -> bool:
+        """
+        Validate tools.json schema
+        
+        Args:
+            tools: Tools dictionary to validate
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        if not isinstance(tools, dict):
+            return False
+
+        sections = tools.get("sections")
+        if not isinstance(sections, list):
+            return False
+
+        for section in sections:
+            if not isinstance(section, dict):
+                return False
+            if "title" not in section or "tools" not in section:
+                return False
+            if not isinstance(section.get("tools"), list):
+                return False
+            for tool in section.get("tools", []):
+                if not isinstance(tool, dict):
+                    return False
+                if "id" not in tool or "title" not in tool or "handler" not in tool:
+                    return False
+
         return True
     
     def shutdown(self):
