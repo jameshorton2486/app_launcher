@@ -416,7 +416,7 @@ class ConfigManager:
                             "title": "Network Stats",
                             "subtitle": "",
                             "tooltip": "Display network statistics",
-                            "handler": {"service": "utilities_tab", "method": "show_network_stats"}
+                            "handler": {"service": "cleanup_service", "method": "get_network_stats"}
                         }
                     ]
                 },

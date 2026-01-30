@@ -9,6 +9,14 @@ from watchdog.events import FileSystemEventHandler
 from typing import Callable, Optional
 import fnmatch
 
+# Try to import logger
+try:
+    from src.utils.logger import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
+
 
 class DownloadsFileHandler(FileSystemEventHandler):
     """Handler for file system events in Downloads folder"""
@@ -83,14 +91,14 @@ class FileWatcher:
     
     def default_notification(self, file_path: str, project: dict):
         """Default notification handler"""
-        print(f"New file detected: {os.path.basename(file_path)}")
-        print(f"Matches project: {project.get('name', 'Unknown')}")
+        logger.info("New file detected: %s", os.path.basename(file_path))
+        logger.info("Matches project: %s", project.get('name', 'Unknown'))
         # Could show a notification here
     
     def start(self):
         """Start watching Downloads folder"""
         if not os.path.exists(self.downloads_path):
-            print(f"Downloads folder does not exist: {self.downloads_path}")
+            logger.warning("Downloads folder does not exist: %s", self.downloads_path)
             return
         
         event_handler = DownloadsFileHandler(self.on_file_added, self.projects)

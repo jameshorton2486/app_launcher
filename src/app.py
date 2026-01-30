@@ -757,15 +757,7 @@ class AppLauncher(ctk.CTk):
                 self.after(100, self.withdraw)
         except Exception as e:
             logger.error(f"Error in system integration: {e}", exc_info=True)
-        
-        # Optional: Start file watcher for downloads
-        # Uncomment to enable:
-        # from src.utils.file_watcher import FileWatcher
-        # downloads_path = self.config_manager.get_setting('paths.downloads_folder', '')
-        # if downloads_path:
-        #     projects = self.config_manager.load_projects()
-        #     self.file_watcher = FileWatcher(downloads_path, projects)
-        #     self.file_watcher.start()
+
     
     def toggle_window(self):
         """Toggle window visibility (for hotkey)"""

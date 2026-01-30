@@ -22,6 +22,14 @@ from src.services.process_service import ProcessService
 from src.components.project_card import ProjectCard
 from src.components.project_dialog import ProjectDialog
 
+# Try to import logger
+try:
+    from src.utils.logger import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
+
 
 class ProjectsTab(ctk.CTkFrame):
     """Projects tab with project cards"""
@@ -296,7 +304,7 @@ class ProjectsTab(ctk.CTkFrame):
                 repo_path = project.get('path', '')
                 if repo_path and os.path.exists(os.path.join(repo_path, '.git')):
                     success, message = self.git_service.pull(repo_path)
-                    print(f"{project.get('name')}: {message}")
+                    logger.info("%s: %s", project.get('name'), message)
             # Refresh status after pulling
             self.after(1000, self.refresh_all_git_status)
         
