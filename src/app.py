@@ -19,6 +19,7 @@ from src.theme import COLORS, apply_theme
 from src.config_manager import ConfigManager
 from src.components.search_bar import SearchBar
 from src.components.status_bar import StatusBar
+from src.components.command_palette import CommandPalette
 from src.tabs.dashboard_tab import DashboardTab
 from src.tabs.projects_tab import ProjectsTab
 from src.tabs.downloads_tab import DownloadsTab
@@ -305,6 +306,10 @@ class AppLauncher(ctk.CTk):
         self._build_views()
         self.show_view("Dashboard")
 
+        # Command palette bindings
+        self.bind_all("<Control-k>", lambda e: self.open_command_palette())
+        self.bind_all("<Control-p>", lambda e: self.open_command_palette())
+
         # Update status
         self.status_bar.set_status("Ready")
 
@@ -489,6 +494,13 @@ class AppLauncher(ctk.CTk):
         except Exception as e:
             logger.error(f"Error opening settings: {e}", exc_info=True)
             self.status_bar.set_status("Error opening settings")
+
+    def open_command_palette(self):
+        """Open command palette modal"""
+        try:
+            CommandPalette(self, self.config_manager)
+        except Exception as e:
+            logger.error(f"Error opening command palette: {e}", exc_info=True)
     
     def on_settings_saved(self, settings):
         """Handle settings save"""
