@@ -954,10 +954,12 @@ class AppLauncher(ctk.CTk):
         issues = []
         for metric in result.get("metrics", {}).values():
             if metric.get("status") in {"yellow", "red"}:
-                issues.append(f"{metric.get('label')}: {metric.get('value')}")
+                label = metric.get("label", "")
+                value = metric.get("value", "")
+                issues.append(self._format_health_issue(label, value))
 
-        message = "Found items that need attention:\n"
-        message += "\n".join(f"• {issue}" for issue in issues[:4])
+        message = f"Found {len(issues)} items that need attention:\n"
+        message += "\n".join(f"• {issue}" for issue in issues[:3])
 
         ctk.CTkLabel(
             body,
@@ -1001,3 +1003,22 @@ class AppLauncher(ctk.CTk):
     def run(self):
         """Start the application"""
         self.mainloop()
+
+    @staticmethod
+    def _format_health_issue(label: str, value: str) -> str:
+        label_lower = (label or "").lower()
+        if "disk" in label_lower:
+            return f"Disk space is low ({value})"
+        if "temp" in label_lower:
+            return f"Temp files are {value}"
+        if "recycle" in label_lower:
+            return f"Recycle Bin is {value}"
+        if "uptime" in label_lower:
+            return f"System uptime is {value}"
+        if "cleanup" in label_lower:
+            return f"{value} since last cleanup"
+        if "ram" in label_lower:
+            return f"RAM usage is {value}"
+        if "dns" in label_lower:
+            return f"DNS response is {value}"
+        return f"{label}: {value}"

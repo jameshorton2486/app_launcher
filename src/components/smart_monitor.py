@@ -129,7 +129,7 @@ class SmartMonitor:
         if status != "green":
             message = "Disk space is getting low. Run 'Disk Cleanup' to free space."
             if status == "red":
-                message = "Disk space is critically low. Run 'Disk Cleanup' and clear temp files."
+                message = "Disk space is low. Run 'Disk Cleanup' and clear temp files."
             metric["recommendations"] = [
                 {"message": message, "tool_id": "disk_cleanup"},
                 {"message": "Clear temp files to reclaim space.", "tool_id": "clear_temp_files"}
@@ -141,7 +141,11 @@ class SmartMonitor:
         size_bytes = self._dir_size(temp_path) if temp_path else 0
         size_mb = size_bytes / (1024 ** 2)
         status = self._status_for_thresholds(size_mb, 500, 2000)
-        metric = self._metric("Temp Files", f"{size_mb:.1f} MB", status)
+        if size_mb >= 1024:
+            size_label = f"{size_mb / 1024:.1f} GB"
+        else:
+            size_label = f"{size_mb:.0f} MB"
+        metric = self._metric("Temp Files", size_label, status)
         if status != "green":
             strength = "Strongly suggest" if status == "red" else "Suggest"
             metric["recommendations"] = [{
@@ -184,7 +188,8 @@ class SmartMonitor:
             status = "red"
         elif size_gb > 1:
             status = "yellow"
-        metric = self._metric("Recycle Bin", f"{size_gb:.2f} GB", status)
+        size_label = f"{size_gb:.2f} GB" if size_gb >= 1 else f"{size_gb * 1024:.0f} MB"
+        metric = self._metric("Recycle Bin", size_label, status)
         if status != "green":
             strength = "Strongly suggest" if status == "red" else "Suggest"
             metric["recommendations"] = [{
@@ -259,7 +264,7 @@ class SmartMonitor:
         metric = self._metric("Last Cleanup", f"{days} days ago", status)
         if status != "green":
             metric["recommendations"] = [{
-                "message": "It's been a while since your last cleanup.",
+                "message": f"It's been {days} days since last cleanup. Run Quick Cleanup.",
                 "action": "quick_cleanup"
             }]
         return metric
