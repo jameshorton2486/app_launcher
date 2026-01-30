@@ -7,6 +7,7 @@ import customtkinter as ctk
 import sys
 import os
 import tkinter as tk
+from tkinter import simpledialog
 
 # Add parent directory to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,12 +16,13 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.services.external_tool_service import ExternalToolService
 
 
 class ProjectCard(ctk.CTkFrame):
     """Card widget for displaying project information"""
     
-    def __init__(self, parent, project: dict, config_manager, git_service, process_service, on_edit=None, on_remove=None):
+    def __init__(self, parent, project: dict, config_manager, git_service, process_service, on_edit=None, on_remove=None, output_callback=None):
         """
         Initialize project card
         
@@ -47,9 +49,11 @@ class ProjectCard(ctk.CTkFrame):
         self.process_service = process_service
         self.on_edit = on_edit
         self.on_remove = on_remove
+        self.output_callback = output_callback
         
         self.git_status = None
         self.last_commit = None
+        self.external_tool_service = ExternalToolService(config_manager)
         
         self.setup_ui()
         self.update_git_status()
@@ -116,15 +120,18 @@ class ProjectCard(ctk.CTkFrame):
         )
         self.favorite_btn.pack(side='left', padx=2)
         
-        # Git status indicator (🟢 clean, 🟡 uncommitted, 🔴 needs pull)
-        self.git_indicator = ctk.CTkLabel(
+        # Git status badge
+        self.git_badge = ctk.CTkLabel(
             right_frame,
             text='',
-            width=30,
-            height=30,
-            font=('Segoe UI', 16)
+            width=90,
+            height=26,
+            font=('Segoe UI', 10, 'bold'),
+            text_color=COLORS['text_primary'],
+            fg_color=COLORS['bg_tertiary'],
+            corner_radius=12
         )
-        self.git_indicator.pack(side='left', padx=2)
+        self.git_badge.pack(side='left', padx=2)
         
         # Info frame (language, last commit)
         info_frame = ctk.CTkFrame(self, fg_color='transparent')
@@ -189,6 +196,19 @@ class ProjectCard(ctk.CTkFrame):
             command=self.open_terminal
         )
         terminal_btn.pack(side='left', padx=2)
+
+        # Debug button
+        debug_btn = ctk.CTkButton(
+            buttons_frame,
+            text="🐛",
+            width=35,
+            height=28,
+            font=('Segoe UI', 12),
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.launch_debugger
+        )
+        debug_btn.pack(side='left', padx=2)
         
         # IDE dropdown
         self.ide_menu = ctk.CTkOptionMenu(
@@ -219,19 +239,29 @@ class ProjectCard(ctk.CTkFrame):
             )
             claude_btn.pack(side='left', padx=2)
         
-        # GitHub button
-        if self.project.get('repo_url'):
-            github_btn = ctk.CTkButton(
-                buttons_frame,
-                text="🐙",
-                width=35,
-                height=28,
-                font=('Segoe UI', 12),
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['accent_secondary'],
-                command=self.open_github
-            )
-            github_btn.pack(side='left', padx=2)
+        # GitHub dropdown menu
+        self.github_menu = ctk.CTkOptionMenu(
+            buttons_frame,
+            values=[
+                '🐙 GitHub',
+                'Pull',
+                'Push',
+                'Sync',
+                'Open GitHub Desktop',
+                'View on GitHub.com',
+                'Quick Commit...',
+                'Create Branch...'
+            ],
+            width=140,
+            height=28,
+            font=('Segoe UI', 10),
+            fg_color=COLORS['bg_tertiary'],
+            button_color=COLORS['bg_tertiary'],
+            button_hover_color=COLORS['accent_secondary'],
+            command=self.handle_github_action
+        )
+        self.github_menu.set('🐙 GitHub')
+        self.github_menu.pack(side='left', padx=2)
         
         # Bind right-click for context menu
         self.bind('<Button-3>', self.show_context_menu)
@@ -250,13 +280,18 @@ class ProjectCard(ctk.CTkFrame):
         # Update git indicator
         status_text = self.git_status.get('status_text', 'unknown')
         if status_text == 'clean':
-            self.git_indicator.configure(text='🟢', text_color=COLORS['accent_success'])
+            self.git_badge.configure(text='Clean', fg_color=COLORS['success'])
         elif status_text == 'uncommitted':
-            self.git_indicator.configure(text='🟡', text_color=COLORS['accent_warning'])
-        elif status_text in ['behind', 'diverged']:
-            self.git_indicator.configure(text='🔴', text_color=COLORS['accent_danger'])
+            count = self.git_status.get('uncommitted', 0)
+            self.git_badge.configure(text=f"Changes ({count})", fg_color=COLORS['warning'])
+        elif status_text == 'behind':
+            self.git_badge.configure(text='Behind', fg_color=COLORS['accent_secondary'])
+        elif status_text == 'ahead':
+            self.git_badge.configure(text='Ahead', fg_color=COLORS['accent_secondary'])
+        elif status_text == 'diverged':
+            self.git_badge.configure(text='Diverged', fg_color=COLORS['warning'])
         else:
-            self.git_indicator.configure(text='⚪', text_color=COLORS['text_muted'])
+            self.git_badge.configure(text='Unknown', fg_color=COLORS['bg_tertiary'])
         
         # Update commit label
         if self.last_commit and self.last_commit.get('time_ago'):
@@ -297,11 +332,12 @@ class ProjectCard(ctk.CTkFrame):
                 # Fallback to generic launch_project method
                 success, message = self.process_service.launch_project(self.project)
             
-            if not success:
-                # Could show error in status bar or messagebox
-                print(f"Error launching project: {message}")
+            if self.output_callback:
+                level = "info" if success else "error"
+                self.output_callback(f"{self.project.get('name')}: {message}", level)
         except Exception as e:
-            print(f"Error launching project: {e}")
+            if self.output_callback:
+                self.output_callback(f"{self.project.get('name')}: {e}", "error")
     
     def open_folder(self):
         """Open project folder in File Explorer"""
@@ -309,7 +345,7 @@ class ProjectCard(ctk.CTkFrame):
     
     def open_terminal(self):
         """Open PowerShell in project directory"""
-        self.process_service.open_in_terminal(self.project.get('path', ''))
+        self.process_service.open_terminal(self.project.get('path', ''))
     
     def open_ide(self, choice):
         """Open project in IDE"""
@@ -332,6 +368,13 @@ class ProjectCard(ctk.CTkFrame):
         
         # Reset dropdown
         self.ide_menu.set('🔧 IDE')
+
+    def launch_debugger(self):
+        """Launch project with debugger"""
+        success, message = self.process_service.launch_with_debugger(self.project.get('path', ''), self.config_manager)
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {message}", level)
     
     def open_claude(self):
         """Open Claude project URL"""
@@ -344,6 +387,24 @@ class ProjectCard(ctk.CTkFrame):
         url = self.project.get('repo_url', '')
         if url:
             self.process_service.open_url(url)
+
+    def handle_github_action(self, choice: str):
+        if choice == '🐙 GitHub':
+            return
+
+        action_map = {
+            'Pull': self.git_pull,
+            'Push': self.git_push,
+            'Sync': self.git_sync,
+            'Open GitHub Desktop': self.open_github_desktop,
+            'View on GitHub.com': self.open_github,
+            'Quick Commit...': self.quick_commit,
+            'Create Branch...': self.create_branch
+        }
+        handler = action_map.get(choice)
+        if handler:
+            handler()
+        self.github_menu.set('🐙 GitHub')
     
     def show_context_menu(self, event):
         """Show right-click context menu"""
@@ -476,11 +537,12 @@ class ProjectCard(ctk.CTkFrame):
         success, message = self.git_service.pull(repo_path)
         if success:
             self.update_git_status()
-            # Show success message
             self._show_message("Git Pull", message, "success")
         else:
-            # Show error message
             self._show_message("Git Pull Error", message, "error")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {message}", level)
     
     def git_push(self):
         """Push commits"""
@@ -491,11 +553,68 @@ class ProjectCard(ctk.CTkFrame):
         success, message = self.git_service.push(repo_path)
         if success:
             self.update_git_status()
-            # Show success message
             self._show_message("Git Push", message, "success")
         else:
-            # Show error message
             self._show_message("Git Push Error", message, "error")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {message}", level)
+
+    def git_sync(self):
+        """Pull then push"""
+        repo_path = self.project.get('path', '')
+        if not repo_path:
+            return
+        success, message = self.git_service.sync(repo_path)
+        if success:
+            self.update_git_status()
+            self._show_message("Git Sync", message, "success")
+        else:
+            self._show_message("Git Sync Error", message, "error")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {message}", level)
+
+    def quick_commit(self):
+        """Quick commit with message prompt"""
+        message = simpledialog.askstring("Quick Commit", "Commit message:")
+        if not message:
+            return
+        repo_path = self.project.get('path', '')
+        success, result_message = self.git_service.quick_commit(repo_path, message)
+        if success:
+            self.update_git_status()
+            self._show_message("Quick Commit", result_message, "success")
+        else:
+            self._show_message("Quick Commit Error", result_message, "error")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {result_message}", level)
+
+    def create_branch(self):
+        """Create and checkout a new branch"""
+        branch_name = simpledialog.askstring("Create Branch", "Branch name:")
+        if not branch_name:
+            return
+        repo_path = self.project.get('path', '')
+        success, result_message = self.git_service.create_branch(repo_path, branch_name)
+        if success:
+            self.update_git_status()
+            self._show_message("Create Branch", result_message, "success")
+        else:
+            self._show_message("Create Branch Error", result_message, "error")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"{self.project.get('name')}: {result_message}", level)
+
+    def open_github_desktop(self):
+        """Open GitHub Desktop"""
+        success, message = self.external_tool_service.launch_tool("github_desktop")
+        if self.output_callback:
+            level = "info" if success else "error"
+            self.output_callback(f"GitHub Desktop: {message}", level)
+        if not success:
+            self._show_message("GitHub Desktop", message, "error")
     
     def _show_message(self, title: str, message: str, msg_type: str = "info"):
         """Show a message dialog"""

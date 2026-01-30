@@ -142,6 +142,24 @@ class ProcessService:
         except Exception as e:
             logger.error(f"Error launching executable: {e}")
             return False, str(e)
+
+    def launch_with_debugger(self, project_path: str, config_manager) -> Tuple[bool, str]:
+        """Launch project in IDE with debugger attached (best-effort)"""
+        if not project_path or not os.path.isdir(project_path):
+            return False, "Project path not found"
+
+        candidates = ["cursor", "vscode", "pycharm"]
+        for ide_name in candidates:
+            ide_path = config_manager.get_setting(f'external_tools.{ide_name}', '')
+            if ide_path and os.path.exists(ide_path):
+                try:
+                    subprocess.Popen([ide_path, project_path], creationflags=subprocess.CREATE_NO_WINDOW)
+                    return True, f"Launched in {ide_name}"
+                except Exception as e:
+                    logger.error(f"Error launching {ide_name}: {e}")
+                    return False, f"Failed to launch {ide_name}"
+
+        return False, "No IDE configured"
     
     def open_in_explorer(self, path: str) -> bool:
         """
@@ -336,10 +354,14 @@ Set WshShell = Nothing''')
     def open_terminal(self, folder_path: str) -> bool:
         """Open PowerShell in project directory"""
         try:
-            subprocess.Popen(
-                ['powershell.exe'],
-                cwd=folder_path
-            )
+            terminal_path = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe")
+            if os.path.exists(terminal_path):
+                subprocess.Popen(
+                    [terminal_path, "-d", folder_path],
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+                return True
+            subprocess.Popen(['powershell.exe'], cwd=folder_path)
             return True
         except:
             return False

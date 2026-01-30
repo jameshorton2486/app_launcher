@@ -134,14 +134,17 @@ class ProjectsTab(ctk.CTkFrame):
             fg_color=COLORS['bg_primary'],
             corner_radius=0
         )
-        scrollable_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        scrollable_frame.pack(fill='both', expand=True, padx=10, pady=(10, 0))
         
         # Grid frame for cards
         self.cards_frame = ctk.CTkFrame(scrollable_frame, fg_color='transparent')
         self.cards_frame.pack(fill='both', expand=True)
-        
+
         # Set up drag and drop on the tab
         self.setup_drag_drop()
+
+        # Debug console panel
+        self._build_debug_console()
     
     def load_projects(self):
         """Load projects from config"""
@@ -206,7 +209,8 @@ class ProjectsTab(ctk.CTkFrame):
                 self.git_service,
                 self.process_service,
                 on_edit=self.edit_project,
-                on_remove=self.remove_project
+                on_remove=self.remove_project,
+                output_callback=self.append_console
             )
             card.grid(row=row, column=col, padx=10, pady=10, sticky='nsew')
             self.cards.append(card)
@@ -337,6 +341,115 @@ class ProjectsTab(ctk.CTkFrame):
                 pass
         except ImportError:
             # tkinterdnd2 not available, drag-drop won't work
+            pass
+
+    def _build_debug_console(self):
+        self.debug_panel_expanded = True
+
+        self.debug_frame = ctk.CTkFrame(self, fg_color=COLORS['bg_secondary'], corner_radius=8, height=200)
+        self.debug_frame.pack(fill='x', padx=10, pady=(10, 10))
+        self.debug_frame.pack_propagate(False)
+
+        header = ctk.CTkFrame(self.debug_frame, fg_color='transparent')
+        header.pack(fill='x', padx=10, pady=(8, 4))
+
+        title = ctk.CTkLabel(
+            header,
+            text="Debug Console",
+            font=('Segoe UI', 12, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        )
+        title.pack(side='left')
+
+        self.auto_scroll = ctk.BooleanVar(value=True)
+        auto_scroll_switch = ctk.CTkSwitch(
+            header,
+            text="Auto-scroll",
+            variable=self.auto_scroll,
+            font=('Segoe UI', 10),
+            text_color=COLORS['text_secondary']
+        )
+        auto_scroll_switch.pack(side='right', padx=(8, 0))
+
+        copy_btn = ctk.CTkButton(
+            header,
+            text="Copy",
+            width=70,
+            height=26,
+            font=('Segoe UI', 10),
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.copy_console
+        )
+        copy_btn.pack(side='right', padx=(8, 0))
+
+        clear_btn = ctk.CTkButton(
+            header,
+            text="Clear",
+            width=70,
+            height=26,
+            font=('Segoe UI', 10),
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.clear_console
+        )
+        clear_btn.pack(side='right', padx=(8, 0))
+
+        self.toggle_console_btn = ctk.CTkButton(
+            header,
+            text="Collapse",
+            width=80,
+            height=26,
+            font=('Segoe UI', 10),
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self.toggle_console
+        )
+        self.toggle_console_btn.pack(side='right')
+
+        self.console = ctk.CTkTextbox(
+            self.debug_frame,
+            height=140,
+            fg_color=COLORS['bg_primary'],
+            text_color=COLORS['text_primary']
+        )
+        self.console.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+
+        self._configure_console_tags()
+
+    def _configure_console_tags(self):
+        textbox = self.console._textbox
+        textbox.tag_configure("info", foreground=COLORS['accent_secondary'])
+        textbox.tag_configure("error", foreground=COLORS['error'])
+        textbox.tag_configure("stdout", foreground=COLORS['text_primary'])
+        textbox.tag_configure("stderr", foreground=COLORS['error'])
+
+    def toggle_console(self):
+        self.debug_panel_expanded = not self.debug_panel_expanded
+        if self.debug_panel_expanded:
+            self.console.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+            self.toggle_console_btn.configure(text="Collapse")
+        else:
+            self.console.pack_forget()
+            self.toggle_console_btn.configure(text="Expand")
+
+    def append_console(self, message: str, level: str = "stdout"):
+        timestamp = time.strftime("%H:%M:%S")
+        line = f"[{timestamp}] {message}\n"
+        self.console.insert("end", line, level)
+        if self.auto_scroll.get():
+            self.console.see("end")
+
+    def clear_console(self):
+        self.console.delete("1.0", "end")
+
+    def copy_console(self):
+        try:
+            text = self.console.get("1.0", "end").strip()
+            self.clipboard_clear()
+            self.clipboard_append(text)
+        except Exception:
             pass
     
     def on_file_drop(self, event):

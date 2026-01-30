@@ -249,6 +249,59 @@ class GitService:
         except Exception as e:
             logger.error(f"Error pushing changes for {repo_path}: {e}")
             return False, f"Error: {str(e)}"
+
+    def sync(self, repo_path: str) -> Tuple[bool, str]:
+        """Pull then push"""
+        success, message = self.pull(repo_path)
+        if not success:
+            return False, message
+        return self.push(repo_path)
+
+    def quick_commit(self, repo_path: str, message: str) -> Tuple[bool, str]:
+        """Stage all changes and create a commit"""
+        if not GITPYTHON_AVAILABLE:
+            return False, "GitPython not available"
+
+        repo = self._get_repo(repo_path)
+        if not repo:
+            return False, "Not a git repository"
+
+        if not message:
+            return False, "Commit message is required"
+
+        try:
+            repo.git.add(all=True)
+            if not repo.index.diff("HEAD") and not repo.untracked_files:
+                return False, "No changes to commit"
+            repo.index.commit(message)
+            return True, "Commit created"
+        except GitCommandError as e:
+            return False, f"Git error: {e}"
+        except Exception as e:
+            logger.error(f"Error creating commit for {repo_path}: {e}")
+            return False, f"Error: {str(e)}"
+
+    def create_branch(self, repo_path: str, branch_name: str) -> Tuple[bool, str]:
+        """Create and checkout a new branch"""
+        if not GITPYTHON_AVAILABLE:
+            return False, "GitPython not available"
+
+        repo = self._get_repo(repo_path)
+        if not repo:
+            return False, "Not a git repository"
+
+        if not branch_name:
+            return False, "Branch name is required"
+
+        try:
+            new_branch = repo.create_head(branch_name)
+            new_branch.checkout()
+            return True, f"Switched to {branch_name}"
+        except GitCommandError as e:
+            return False, f"Git error: {e}"
+        except Exception as e:
+            logger.error(f"Error creating branch for {repo_path}: {e}")
+            return False, f"Error: {str(e)}"
     
     def get_last_commit(self, repo_path: str) -> Dict:
         """
