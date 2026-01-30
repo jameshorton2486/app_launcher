@@ -18,6 +18,7 @@ from src.theme import COLORS
 from src.services.cleanup_service import CleanupService
 from src.components.utility_button import UtilityButton
 from src.utils.tool_registry import ToolRegistry
+from src.utils.constants import TOOLS_FILE
 
 # Try to import logger
 try:
@@ -53,14 +54,7 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
     
     def setup_ui(self):
         """Set up the utilities tab UI"""
-        tools_config = self.config_manager.tools or {}
-        services = {
-            "cleanup_service": self.cleanup_service,
-            "cleanup": self.cleanup_service,
-            "utilities_tab": self
-        }
-        context = {"config_manager": self.config_manager}
-        self.tool_registry.register_from_config(tools_config, services, context)
+        self.tool_registry.load_tools(TOOLS_FILE)
 
         legacy_sections = [
             ("QUICK CLEANUP", [
@@ -136,11 +130,11 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
             for tool_id, icon, title, subtitle, legacy_handler, tooltip in tools:
                 handler = legacy_handler
                 if tool_id not in force_legacy:
-                    handler = self.tool_registry.get_handler(tool_id)
+                    handler = self._build_registry_handler(tool_id)
                     if not handler:
                         alias_id = id_aliases.get(tool_id)
                         if alias_id:
-                            handler = self.tool_registry.get_handler(alias_id)
+                            handler = self._build_registry_handler(alias_id)
                 if not handler:
                     logger.warning(f"Tool handler missing for {tool_id}")
                     handler = legacy_handler
@@ -187,6 +181,11 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
                 height=80
             )
             button.pack(side='left', padx=10, pady=5)
+
+    def _build_registry_handler(self, tool_id: str):
+        if not self.tool_registry.get_tool_by_id(tool_id):
+            return None
+        return lambda tid=tool_id: self.tool_registry.execute_tool(tid, self.config_manager)
     
     def show_network_stats(self):
         """Show network statistics in a message box"""

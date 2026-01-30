@@ -16,6 +16,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.utils.tool_registry import ToolRegistry
+from src.utils.constants import TOOLS_FILE
 
 # Try to import logger
 try:
@@ -84,14 +85,18 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
     menu_items = []
 
     tool_registry = ToolRegistry()
-    services = {"cleanup_service": cleanup_service, "cleanup": cleanup_service}
-    context = {"config_manager": config_manager}
-    tool_registry.register_from_config(config_manager.tools or {}, services, context)
+    tool_registry.load_tools(TOOLS_FILE)
+
+    tool_id_aliases = {
+        "clear_standby_ram": "clear_ram_standby"
+    }
 
     def get_tool_handler(tool_id: str):
-        handler = tool_registry.get_handler(tool_id)
-        if handler:
-            return handler
+        resolved_id = tool_id
+        if not tool_registry.get_tool_by_id(resolved_id):
+            resolved_id = tool_id_aliases.get(tool_id, tool_id)
+        if tool_registry.get_tool_by_id(resolved_id):
+            return lambda tid=resolved_id: tool_registry.execute_tool(tid, config_manager)
         logger.warning(f"Tray tool handler missing for {tool_id}")
         return lambda: (False, "Tool not configured")
     
