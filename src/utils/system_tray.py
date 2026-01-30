@@ -15,6 +15,8 @@ parent_dir = os.path.dirname(os.path.dirname(current_dir))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+from src.utils.tool_registry import ToolRegistry
+
 # Try to import logger
 try:
     from src.utils.logger import logger
@@ -80,6 +82,18 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
     
     # Create menu items
     menu_items = []
+
+    tool_registry = ToolRegistry()
+    services = {"cleanup_service": cleanup_service}
+    context = {"config_manager": config_manager}
+    tool_registry.register_from_config(config_manager.tools or {}, services, context)
+
+    def get_tool_handler(tool_id: str):
+        handler = tool_registry.get_handler(tool_id)
+        if handler:
+            return handler
+        logger.warning(f"Tray tool handler missing for {tool_id}")
+        return lambda: (False, "Tool not configured")
     
     # Open App Launcher
     menu_items.append(
@@ -114,42 +128,42 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         pystray.MenuItem(
             'Empty Recycle Bin',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.empty_recycle_bin(),
+                get_tool_handler("empty_recycle_bin"),
                 "Empty Recycle Bin"
             )
         ),
         pystray.MenuItem(
             'Clear Temp Files',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.clear_temp_files(),
+                get_tool_handler("clear_temp_files"),
                 "Clear Temp Files"
             )
         ),
         pystray.MenuItem(
             'Flush DNS',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.flush_dns(),
+                get_tool_handler("flush_dns"),
                 "Flush DNS"
             )
         ),
         pystray.MenuItem(
             'Clear Prefetch',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.clear_prefetch(),
+                get_tool_handler("clear_prefetch"),
                 "Clear Prefetch"
             )
         ),
         pystray.MenuItem(
             'Clear RAM Standby',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.clear_standby_ram(),
+                get_tool_handler("clear_standby_ram"),
                 "Clear RAM Standby"
             )
         ),
         pystray.MenuItem(
             'Restart Explorer',
             lambda icon, item: run_utility(
-                lambda: cleanup_service.restart_explorer(),
+                get_tool_handler("restart_explorer"),
                 "Restart Explorer"
             )
         ),
