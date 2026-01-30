@@ -123,21 +123,12 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
             "open_ccleaner": "ccleaner",
             "open_wise_memory": "wise_memory"
         }
-        force_legacy = {"defrag_optimize", "pause_updates", "network_stats", "open_ccleaner", "open_wise_memory"}
 
         for section_title, tools in legacy_sections:
             buttons = []
             for tool_id, icon, title, subtitle, legacy_handler, tooltip in tools:
-                handler = legacy_handler
-                if tool_id not in force_legacy:
-                    handler = self._build_registry_handler(tool_id)
-                    if not handler:
-                        alias_id = id_aliases.get(tool_id)
-                        if alias_id:
-                            handler = self._build_registry_handler(alias_id)
-                if not handler:
-                    logger.warning(f"Tool handler missing for {tool_id}")
-                    handler = legacy_handler
+                resolved_id = id_aliases.get(tool_id, tool_id)
+                handler = lambda tid=resolved_id: self._execute_tool(tid)
 
                 buttons.append((icon, title, subtitle, handler, tooltip))
             self.create_section(section_title, buttons)
@@ -186,10 +177,15 @@ class UtilitiesTab(ctk.CTkScrollableFrame):
         if not self.tool_registry.get_tool_by_id(tool_id):
             return None
         return lambda tid=tool_id: self.tool_registry.execute_tool(tid, self.config_manager)
+
+    def _execute_tool(self, tool_id: str):
+        if tool_id == "network_stats":
+            return self.show_network_stats()
+        return self.tool_registry.execute_tool(tool_id, self.config_manager)
     
     def show_network_stats(self):
         """Show network statistics in a message box"""
-        success, stats = self.cleanup_service.get_network_stats()
+        success, stats = self.tool_registry.execute_tool("network_stats", self.config_manager)
         if success:
             # Show in a dialog (truncate if too long)
             display_stats = stats[:1000] if len(stats) > 1000 else stats

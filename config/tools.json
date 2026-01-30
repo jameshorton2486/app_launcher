@@ -77,6 +77,17 @@
           "method": "reset_ms_store",
           "requires_admin": false,
           "tags": ["cleanup", "apps"]
+        },
+        {
+          "id": "pause_updates",
+          "title": "Pause Updates",
+          "icon": "⏸️",
+          "description": "Pause Windows Updates for 7 days",
+          "service": "cleanup",
+          "method": "pause_windows_updates",
+          "method_args": [7],
+          "requires_admin": false,
+          "tags": ["updates"]
         }
       ]
     },
@@ -564,9 +575,9 @@
           "title": "CCleaner",
           "icon": "🧽",
           "description": "Comprehensive system cleaning utility",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": ["ccleaner"],
+          "service": "cleanup",
+          "method": "launch_ccleaner",
+          "method_args": ["$config_manager"],
           "requires_admin": false,
           "external": true,
           "tags": ["external", "cleanup"]
@@ -589,9 +600,9 @@
           "title": "Wise Memory Cleaner",
           "icon": "🧠",
           "description": "Aggressive RAM optimization utility",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": ["wise_memory"],
+          "service": "cleanup",
+          "method": "launch_wise_memory_cleaner",
+          "method_args": ["$config_manager"],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.wisecleaner.com/wise-memory-optimizer.html",
