@@ -295,7 +295,11 @@ class AppLauncher(ctk.CTk):
         self.content_frame.pack(fill='both', expand=True, padx=40, pady=32)
 
         # Status bar at bottom
-        self.status_bar = StatusBar(self.content_container, on_settings_click=self.open_settings)
+        self.status_bar = StatusBar(
+            self.content_container,
+            on_settings_click=self.open_settings,
+            on_help_click=self.show_shortcuts_help
+        )
         self.status_bar.pack(fill='x', side='bottom', padx=0, pady=0)
 
         self._sidebar_expanded = True
@@ -309,6 +313,15 @@ class AppLauncher(ctk.CTk):
         # Command palette bindings
         self.bind_all("<Control-k>", lambda e: self.open_command_palette())
         self.bind_all("<Control-p>", lambda e: self.open_command_palette())
+        self.bind_all("<Control-1>", lambda e: self.show_view("Dashboard"))
+        self.bind_all("<Control-2>", lambda e: self.show_view("Projects"))
+        self.bind_all("<Control-3>", lambda e: self.show_view("Optimization"))
+        self.bind_all("<Control-4>", lambda e: self.show_view("Maintenance"))
+        self.bind_all("<Control-5>", lambda e: self.show_view("Settings"))
+        self.bind_all("<Control-f>", lambda e: self.focus_search())
+        self.bind_all("<Control-r>", lambda e: self.refresh_current_view())
+        self.bind_all("<F5>", lambda e: self.refresh_dashboard())
+        self.bind_all("<Escape>", lambda e: self.handle_escape())
 
         # Update status
         self.status_bar.set_status("Ready")
@@ -501,6 +514,84 @@ class AppLauncher(ctk.CTk):
             CommandPalette(self, self.config_manager)
         except Exception as e:
             logger.error(f"Error opening command palette: {e}", exc_info=True)
+
+    def show_shortcuts_help(self):
+        """Show keyboard shortcuts dialog"""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Keyboard Shortcuts")
+        dialog.geometry("520x360")
+        dialog.configure(fg_color=COLORS['bg_primary'])
+        dialog.transient(self)
+        dialog.grab_set()
+
+        frame = ctk.CTkFrame(dialog, fg_color=COLORS['bg_primary'])
+        frame.pack(fill='both', expand=True, padx=24, pady=24)
+
+        title = ctk.CTkLabel(
+            frame,
+            text="Keyboard Shortcuts",
+            font=('Segoe UI', 18, 'bold'),
+            text_color=COLORS['text_primary']
+        )
+        title.pack(anchor='w', pady=(0, 12))
+
+        body = (
+            "Navigation\n"
+            "Ctrl+1-5     Switch tabs\n"
+            "Ctrl+K       Command Palette\n"
+            "Escape       Close dialogs\n\n"
+            "Actions\n"
+            "Ctrl+R       Refresh\n"
+            "F5           Refresh Dashboard\n"
+            "Ctrl+F       Focus search\n\n"
+            "Global\n"
+            "Win+Shift+L  Show/Hide app"
+        )
+        ctk.CTkLabel(
+            frame,
+            text=body,
+            font=('Segoe UI', 12),
+            text_color=COLORS['text_secondary'],
+            justify='left',
+            anchor='w'
+        ).pack(fill='x')
+
+        ctk.CTkButton(
+            frame,
+            text="Close",
+            width=120,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=dialog.destroy
+        ).pack(pady=20)
+
+    def focus_search(self):
+        try:
+            self.search_bar.search_entry.focus_set()
+        except Exception:
+            pass
+
+    def refresh_dashboard(self):
+        if hasattr(self, 'dashboard_tab') and self.dashboard_tab:
+            try:
+                self.dashboard_tab._refresh_system_stats()
+            except Exception:
+                pass
+
+    def refresh_current_view(self):
+        if self._current_view == "Downloads" and self.downloads_tab:
+            self.downloads_tab.refresh_files()
+        elif self._current_view == "Projects" and self.projects_tab:
+            self.projects_tab.refresh_all_git_status()
+        elif self._current_view == "Dashboard":
+            self.refresh_dashboard()
+
+    def handle_escape(self):
+        # Close command palette if open
+        for widget in self.winfo_children():
+            if isinstance(widget, CommandPalette):
+                widget.close()
+                return
     
     def on_settings_saved(self, settings):
         """Handle settings save"""

@@ -28,7 +28,7 @@ from src.theme import COLORS
 class StatusBar(ctk.CTkFrame):
     """Status bar component at bottom of window"""
     
-    def __init__(self, parent, on_settings_click=None):
+    def __init__(self, parent, on_settings_click=None, on_help_click=None):
         """
         Initialize status bar
         
@@ -42,6 +42,7 @@ class StatusBar(ctk.CTkFrame):
         self.git_status = ""
         self.system_info = ""
         self.on_settings_click = on_settings_click
+        self.on_help_click = on_help_click
         
         self.setup_ui()
     
@@ -75,6 +76,23 @@ class StatusBar(ctk.CTkFrame):
         separator2 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
         separator2.pack(side='left', fill='y', padx=5, pady=5)
         
+        # Right: Help button
+        self.help_btn = ctk.CTkButton(
+            self,
+            text="?",
+            width=30,
+            height=25,
+            font=('Segoe UI', 12),
+            fg_color='transparent',
+            hover_color=COLORS['bg_tertiary'],
+            command=self._on_help_click
+        )
+        self.help_btn.pack(side='right', padx=(5, 0), pady=2)
+
+        # Separator before help
+        separator_help = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
+        separator_help.pack(side='right', fill='y', padx=5, pady=5)
+
         # Right: Settings button (gear icon)
         self.settings_btn = ctk.CTkButton(
             self,
@@ -117,6 +135,10 @@ class StatusBar(ctk.CTkFrame):
                     widget.open_settings()
                     return
                 widget = widget.master
+
+    def _on_help_click(self):
+        if self.on_help_click:
+            self.on_help_click()
     
     def set_status(self, text: str):
         """Set main status text"""
