@@ -19,6 +19,7 @@ from src.theme import COLORS, apply_theme
 from src.config_manager import ConfigManager
 from src.components.search_bar import SearchBar
 from src.components.status_bar import StatusBar
+from src.tabs.dashboard_tab import DashboardTab
 from src.tabs.projects_tab import ProjectsTab
 from src.tabs.downloads_tab import DownloadsTab
 from src.tabs.utilities_tab import UtilitiesTab
@@ -380,31 +381,23 @@ class AppLauncher(ctk.CTk):
         self.views = {}
 
         dashboard_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        dashboard_label = ctk.CTkLabel(
+        self.dashboard_tab = DashboardTab(
             dashboard_view,
-            text="Dashboard (coming soon)",
-            font=('Segoe UI', 18, 'bold'),
-            text_color=COLORS['text_primary'],
-            anchor='w'
+            self.config_manager,
+            process_service=self.process_service,
+            status_bar=self.status_bar,
+            on_open_downloads=lambda: self.show_view("Downloads")
         )
-        dashboard_label.pack(fill='x', padx=10, pady=(0, 10))
+        self.dashboard_tab.pack(fill='both', expand=True)
+        self._dashboard_initialized = True
 
-        downloads_label = ctk.CTkLabel(
-            dashboard_view,
-            text="Downloads",
-            font=('Segoe UI', 14, 'bold'),
-            text_color=COLORS['text_primary'],
-            anchor='w'
-        )
-        downloads_label.pack(fill='x', padx=10, pady=(10, 6))
-
+        downloads_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
         self.downloads_tab = DownloadsTab(
-            dashboard_view,
+            downloads_view,
             self.config_manager,
             status_bar=self.status_bar
         )
         self.downloads_tab.pack(fill='both', expand=True)
-        self._dashboard_initialized = False
 
         projects_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
         self.projects_tab = ProjectsTab(projects_view, self.config_manager)
@@ -442,6 +435,7 @@ class AppLauncher(ctk.CTk):
 
         self.views = {
             "Dashboard": dashboard_view,
+            "Downloads": downloads_view,
             "Projects": projects_view,
             "Optimization": optimization_view,
             "Maintenance": maintenance_view,
@@ -462,7 +456,7 @@ class AppLauncher(ctk.CTk):
         for name, item in self._nav_items.items():
             item.set_active(name == view_name)
 
-        if view_name == "Dashboard" and self.downloads_tab and not self._dashboard_initialized:
+        if view_name == "Downloads" and self.downloads_tab and not getattr(self.downloads_tab, '_initialized', False):
             self.status_bar.set_status("Loading downloads...")
             self.after(0, self._initialize_downloads_tab)
 
@@ -685,7 +679,7 @@ class AppLauncher(ctk.CTk):
 
             if current_view == "Projects" and self.projects_tab:
                 self.projects_tab.filter_projects(search_text)
-            elif current_view == "Dashboard" and self.downloads_tab:
+            elif current_view == "Downloads" and self.downloads_tab:
                 self.downloads_tab.filter_by_search(search_text)
             elif current_view == "Maintenance" and self.utilities_tab:
                 if hasattr(self.utilities_tab, 'filter_utilities'):
