@@ -21,6 +21,11 @@ class StartupManager:
     
     REGISTRY_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
     APP_NAME = "JamesProjectLauncher"
+    SUPPRESS_ERRORS = False
+
+    @classmethod
+    def set_suppress_errors(cls, suppress: bool):
+        cls.SUPPRESS_ERRORS = bool(suppress)
     
     @staticmethod
     def get_app_path(start_minimized: bool = False) -> str:
@@ -86,7 +91,10 @@ class StartupManager:
             logger.info(f"Startup enabled (minimized={start_minimized})")
             return True
         except Exception as e:
-            logger.error(f"Error enabling startup: {e}")
+            if cls.SUPPRESS_ERRORS:
+                logger.debug(f"Startup enable suppressed: {e}")
+            else:
+                logger.error(f"Error enabling startup: {e}")
             return False
     
     @classmethod
@@ -115,7 +123,10 @@ class StartupManager:
             logger.info("Startup disabled")
             return True
         except Exception as e:
-            logger.error(f"Error disabling startup: {e}")
+            if cls.SUPPRESS_ERRORS:
+                logger.debug(f"Startup disable suppressed: {e}")
+            else:
+                logger.error(f"Error disabling startup: {e}")
             return False
     
     @classmethod
@@ -142,7 +153,10 @@ class StartupManager:
                 winreg.CloseKey(key)
                 return False
         except Exception as e:
-            logger.error(f"Error checking startup: {e}")
+            if cls.SUPPRESS_ERRORS:
+                logger.debug(f"Startup check suppressed: {e}")
+            else:
+                logger.error(f"Error checking startup: {e}")
             return False
     
     @classmethod

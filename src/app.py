@@ -702,6 +702,8 @@ class AppLauncher(ctk.CTk):
     def setup_system_integration(self):
         """Set up system tray, hotkeys, and startup"""
         try:
+            suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
+            StartupManager.set_suppress_errors(suppress_warnings)
             # Start system tray icon
             try:
                 self.tray_icon = start_tray_icon(
@@ -713,7 +715,10 @@ class AppLauncher(ctk.CTk):
                 )
                 logger.info("System tray icon started")
             except Exception as e:
-                logger.warning(f"Failed to start tray icon: {e}")
+                if suppress_warnings:
+                    logger.debug(f"Tray icon suppressed: {e}")
+                else:
+                    logger.warning(f"Failed to start tray icon: {e}")
             
             # Register global hotkey
             try:
