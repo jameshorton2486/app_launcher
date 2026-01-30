@@ -208,16 +208,113 @@ class OptimizationTab(ctk.CTkScrollableFrame):
 
     def _confirm_risky_operation(self, tool_id: str) -> bool:
         if tool_id == "disable_vbs":
-            message = (
-                "WARNING: Disabling VBS reduces protection against kernel-level malware.\n"
-                "This improves gaming performance by 5-25% but is NOT recommended for\n"
-                "general use. Only disable on dedicated gaming PCs.\n\n"
-                "Are you sure you want to continue?"
-            )
-        else:
-            message = "This operation changes GPU scheduling settings and may require a restart. Continue?"
-
+            return self._confirm_disable_vbs()
+        message = "This operation changes GPU scheduling settings and may require a restart. Continue?"
         return self._prompt_user("Confirm Action", message)
+
+    def _confirm_disable_vbs(self) -> bool:
+        result = {"value": False}
+        ready = threading.Event()
+
+        def _show():
+            dialog = ctk.CTkToplevel(self)
+            dialog.title("Security Warning")
+            dialog.geometry("560x520")
+            dialog.configure(fg_color=COLORS['bg_primary'])
+            dialog.transient(self.winfo_toplevel())
+            dialog.grab_set()
+
+            header = ctk.CTkLabel(
+                dialog,
+                text="SECURITY WARNING",
+                font=('Segoe UI', 16, 'bold'),
+                text_color=COLORS['error']
+            )
+            header.pack(pady=(16, 10))
+
+            body_text = (
+                "You are about to disable Virtualization-Based Security (VBS).\n\n"
+                "WHAT THIS DOES:\n"
+                "Disabling VBS can improve gaming performance by 5-25% by\n"
+                "removing the hypervisor layer that protects Windows.\n\n"
+                "SECURITY RISKS:\n"
+                "• Removes protection against kernel-level malware\n"
+                "• Disables Credential Guard (password protection)\n"
+                "• Disables Hypervisor-Protected Code Integrity\n"
+                "• Makes your PC more vulnerable to rootkits\n\n"
+                "RECOMMENDED FOR:\n"
+                "• Dedicated gaming PCs not used for banking/sensitive work\n"
+                "• Systems where maximum FPS is the priority\n\n"
+                "NOT RECOMMENDED FOR:\n"
+                "• Work computers with sensitive data\n"
+                "• PCs used for online banking\n"
+                "• Shared family computers\n\n"
+                "A restart is required for changes to take effect."
+            )
+
+            body = ctk.CTkLabel(
+                dialog,
+                text=body_text,
+                font=('Segoe UI', 11),
+                text_color=COLORS['text_secondary'],
+                justify='left',
+                anchor='w',
+                wraplength=520
+            )
+            body.pack(padx=20, pady=(0, 10), fill='x')
+
+            confirm_var = ctk.BooleanVar(value=False)
+
+            def toggle():
+                if confirm_var.get():
+                    disable_btn.configure(state='normal')
+                else:
+                    disable_btn.configure(state='disabled')
+
+            checkbox = ctk.CTkCheckBox(
+                dialog,
+                text="I understand the security risks and want to proceed",
+                variable=confirm_var,
+                command=toggle
+            )
+            checkbox.pack(anchor='w', padx=20, pady=(0, 14))
+
+            actions = ctk.CTkFrame(dialog, fg_color='transparent')
+            actions.pack(fill='x', padx=20, pady=(0, 16))
+
+            def cancel():
+                result["value"] = False
+                dialog.destroy()
+                ready.set()
+
+            def proceed():
+                result["value"] = True
+                dialog.destroy()
+                ready.set()
+
+            ctk.CTkButton(
+                actions,
+                text="Cancel",
+                width=140,
+                fg_color=COLORS['bg_tertiary'],
+                hover_color=COLORS['bg_hover'],
+                command=cancel
+            ).pack(side='left')
+
+            disable_btn = ctk.CTkButton(
+                actions,
+                text="Disable VBS",
+                width=160,
+                fg_color=COLORS['error'],
+                hover_color=COLORS['warning'],
+                state='disabled',
+                command=proceed
+            )
+            disable_btn.pack(side='right')
+
+        self.after(0, _show)
+        ready.wait()
+        return result["value"]
 
     def _prompt_user(self, title: str, message: str) -> bool:
         result = {"value": False}

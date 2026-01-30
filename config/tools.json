@@ -16,7 +16,18 @@
           "service": "cleanup",
           "method": "empty_recycle_bin",
           "requires_admin": false,
-          "tags": ["cleanup", "disk", "quick"]
+          "tags": [
+            "cleanup",
+            "disk",
+            "quick"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Removes all files in the Recycle Bin to reclaim disk space. This permanently deletes items that were already marked for deletion, which helps keep storage tidy.",
+          "risk_level": "safe",
+          "recommended_frequency": "weekly",
+          "notes": "Files in the Recycle Bin are permanently deleted.",
+          "when_to_use": "When the Recycle Bin has accumulated files or disk space is low."
         },
         {
           "id": "clear_temp_files",
@@ -26,7 +37,18 @@
           "service": "cleanup",
           "method": "clear_temp_files",
           "requires_admin": false,
-          "tags": ["cleanup", "disk", "quick"]
+          "tags": [
+            "cleanup",
+            "disk",
+            "quick"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Deletes temporary files from user and system temp folders. Clearing temp files frees space and can resolve minor app issues caused by stale temp data.",
+          "risk_level": "safe",
+          "recommended_frequency": "weekly",
+          "notes": "Some files in use are skipped to avoid disrupting active apps.",
+          "when_to_use": "When disk space is low or apps are behaving oddly."
         },
         {
           "id": "flush_dns",
@@ -36,7 +58,37 @@
           "service": "cleanup",
           "method": "flush_dns",
           "requires_admin": false,
-          "tags": ["network", "quick"]
+          "tags": [
+            "network",
+            "quick"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Clears the DNS resolver cache used to translate domain names to IP addresses. This can fix connection errors when DNS entries are stale or incorrect.",
+          "risk_level": "safe",
+          "recommended_frequency": "weekly",
+          "when_to_use": "When websites fail to load or after network changes."
+        },
+        {
+          "id": "clear_browser_cache",
+          "title": "Clear Browser Cache",
+          "icon": "🌐",
+          "description": "Clears cached files from installed web browsers.",
+          "service": "cleanup",
+          "method": "clear_browser_cache",
+          "requires_admin": false,
+          "requires_restart": false,
+          "tags": [
+            "cleanup",
+            "browser",
+            "cache"
+          ],
+          "category": "Quick Cleanup",
+          "detailed_description": "Removes cached images, scripts, and temporary files from Chrome, Firefox, Edge, and Brave. This can free significant disk space but will require websites to reload assets on first visit.",
+          "risk_level": "safe",
+          "recommended_frequency": "monthly",
+          "notes": "Does NOT clear passwords, bookmarks, or browsing history. Only clears cached files.",
+          "when_to_use": "When browsers feel sluggish or disk space is low."
         },
         {
           "id": "clear_prefetch",
@@ -46,7 +98,19 @@
           "service": "cleanup",
           "method": "clear_prefetch",
           "requires_admin": true,
-          "tags": ["cleanup", "disk", "admin"]
+          "tags": [
+            "cleanup",
+            "disk",
+            "admin"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Windows Prefetch stores data about how applications start to speed up future launches. Clearing this cache frees disk space but temporarily slows app launches until the cache rebuilds (usually 1-2 days). Best used occasionally, not daily.",
+          "risk_level": "low",
+          "recommended_frequency": "monthly",
+          "cooldown_days": 7,
+          "notes": "Windows rebuilds this cache automatically. Clearing too often can temporarily slow app launches.",
+          "when_to_use": "When disk space is low or after installing/uninstalling many programs."
         },
         {
           "id": "clear_ram_standby",
@@ -56,7 +120,16 @@
           "service": "cleanup",
           "method": "clear_standby_ram",
           "requires_admin": false,
-          "tags": ["memory", "performance"]
+          "tags": [
+            "memory",
+            "performance"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Releases memory held in the standby list so active apps can use it immediately. This can quickly free RAM without closing programs.",
+          "risk_level": "safe",
+          "recommended_frequency": "daily",
+          "when_to_use": "When RAM usage is high or the system feels sluggish."
         },
         {
           "id": "clear_update_cache",
@@ -66,7 +139,18 @@
           "service": "cleanup",
           "method": "clear_windows_update_cache",
           "requires_admin": true,
-          "tags": ["cleanup", "updates", "admin"]
+          "tags": [
+            "cleanup",
+            "updates",
+            "admin"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Deletes the Windows Update download cache to resolve stuck updates and reclaim disk space. Windows will re-download required update files after clearing.",
+          "risk_level": "safe",
+          "recommended_frequency": "monthly",
+          "notes": "Updates may need to re-download after clearing the cache.",
+          "when_to_use": "When updates fail to install or downloads are stuck."
         },
         {
           "id": "reset_ms_store",
@@ -76,7 +160,16 @@
           "service": "cleanup",
           "method": "reset_ms_store",
           "requires_admin": false,
-          "tags": ["cleanup", "apps"]
+          "tags": [
+            "cleanup",
+            "apps"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Resets the Microsoft Store cache and restarts its background services. This can fix issues with app downloads or updates.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When Store apps will not download or update."
         },
         {
           "id": "pause_updates",
@@ -85,9 +178,20 @@
           "description": "Pause Windows Updates for 7 days",
           "service": "cleanup",
           "method": "pause_windows_updates",
-          "method_args": [7],
+          "method_args": [
+            7
+          ],
           "requires_admin": false,
-          "tags": ["updates"]
+          "tags": [
+            "updates"
+          ],
+          "category": "Quick Cleanup",
+          "requires_restart": false,
+          "detailed_description": "Temporarily pauses Windows Updates for a short period. This is useful when you need to avoid restarts during important work.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Pausing updates delays security patches while the pause is active.",
+          "when_to_use": "When you need a short break from update prompts."
         }
       ]
     },
@@ -106,7 +210,16 @@
           "service": "cleanup",
           "method": "run_disk_cleanup",
           "requires_admin": false,
-          "tags": ["cleanup", "disk"]
+          "tags": [
+            "cleanup",
+            "disk"
+          ],
+          "category": "Memory & Disk",
+          "requires_restart": false,
+          "detailed_description": "Launches Windows Disk Cleanup to remove unnecessary system files and caches. This safely frees disk space without affecting personal files.",
+          "risk_level": "safe",
+          "recommended_frequency": "monthly",
+          "when_to_use": "When you need to reclaim disk space."
         },
         {
           "id": "optimize_drives",
@@ -116,7 +229,19 @@
           "service": "cleanup",
           "method": "optimize_drive",
           "requires_admin": true,
-          "tags": ["disk", "performance", "admin"]
+          "tags": [
+            "disk",
+            "performance",
+            "admin"
+          ],
+          "category": "Memory & Disk",
+          "requires_restart": false,
+          "detailed_description": "Runs TRIM for SSDs or defragmentation for HDDs to optimize storage performance. This can improve file access speed over time.",
+          "risk_level": "low",
+          "recommended_frequency": "monthly",
+          "cooldown_days": 7,
+          "notes": "May take several minutes depending on drive size.",
+          "when_to_use": "When disk performance feels slow or after heavy file changes."
         },
         {
           "id": "restart_explorer",
@@ -126,7 +251,16 @@
           "service": "cleanup",
           "method": "restart_explorer",
           "requires_admin": false,
-          "tags": ["system", "quick"]
+          "tags": [
+            "system",
+            "quick"
+          ],
+          "category": "Memory & Disk",
+          "requires_restart": false,
+          "detailed_description": "Restarts Windows Explorer to refresh the taskbar, desktop, and file manager. Useful for fixing UI glitches without a full reboot.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When the taskbar or desktop is unresponsive."
         }
       ]
     },
@@ -146,7 +280,17 @@
           "method": "reset_network",
           "requires_admin": true,
           "requires_restart": true,
-          "tags": ["network", "admin", "restart"]
+          "tags": [
+            "network",
+            "admin",
+            "restart"
+          ],
+          "category": "Network",
+          "detailed_description": "Resets the Windows network stack to default settings. This can resolve deep connectivity issues caused by corrupted network configuration.",
+          "risk_level": "medium",
+          "recommended_frequency": "as_needed",
+          "notes": "Restart recommended after running this tool.",
+          "when_to_use": "When network connectivity is broken or unstable."
         },
         {
           "id": "release_renew_ip",
@@ -156,7 +300,15 @@
           "service": "cleanup",
           "method": "release_renew_ip",
           "requires_admin": false,
-          "tags": ["network"]
+          "tags": [
+            "network"
+          ],
+          "category": "Network",
+          "requires_restart": false,
+          "detailed_description": "Releases the current DHCP lease and requests a new IP address. This can resolve IP conflicts or stale leases.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you cannot reach the network or suspect IP conflicts."
         },
         {
           "id": "network_stats",
@@ -166,7 +318,16 @@
           "service": "cleanup",
           "method": "get_network_stats",
           "requires_admin": false,
-          "tags": ["network", "info"]
+          "tags": [
+            "network",
+            "info"
+          ],
+          "category": "Network",
+          "requires_restart": false,
+          "detailed_description": "Displays network interface statistics to help troubleshoot connectivity and bandwidth issues. This is informational only.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When diagnosing network issues or monitoring activity."
         }
       ]
     },
@@ -185,7 +346,19 @@
           "service": "maintenance",
           "method": "run_sfc_scan",
           "requires_admin": true,
-          "tags": ["repair", "admin", "long"]
+          "tags": [
+            "repair",
+            "admin",
+            "long"
+          ],
+          "category": "System Repair",
+          "requires_restart": false,
+          "detailed_description": "Runs System File Checker to verify and repair corrupted Windows system files. This can fix crashes or missing components caused by file corruption.",
+          "risk_level": "medium",
+          "recommended_frequency": "quarterly",
+          "cooldown_days": 30,
+          "notes": "Takes 10-30 minutes. Do not interrupt the scan.",
+          "when_to_use": "When Windows is unstable or system files are suspected to be corrupted."
         },
         {
           "id": "dism_repair",
@@ -195,7 +368,19 @@
           "service": "maintenance",
           "method": "run_dism_repair",
           "requires_admin": true,
-          "tags": ["repair", "admin", "long"]
+          "tags": [
+            "repair",
+            "admin",
+            "long"
+          ],
+          "category": "System Repair",
+          "requires_restart": false,
+          "detailed_description": "Uses DISM to repair the Windows component store and restore health. This can resolve update failures and system corruption.",
+          "risk_level": "medium",
+          "recommended_frequency": "quarterly",
+          "cooldown_days": 30,
+          "notes": "Takes 15-45 minutes. Do not interrupt the scan.",
+          "when_to_use": "When SFC cannot repair files or updates fail repeatedly."
         },
         {
           "id": "chkdsk",
@@ -206,7 +391,18 @@
           "method": "schedule_chkdsk",
           "requires_admin": true,
           "requires_restart": true,
-          "tags": ["disk", "repair", "admin", "restart"]
+          "tags": [
+            "disk",
+            "repair",
+            "admin",
+            "restart"
+          ],
+          "category": "System Repair",
+          "detailed_description": "Schedules a disk check on the next restart to scan for file system errors and bad sectors. This helps prevent data loss on failing drives.",
+          "risk_level": "medium",
+          "recommended_frequency": "as_needed",
+          "notes": "Runs at next restart and can take hours on large drives.",
+          "when_to_use": "When you suspect disk errors or see file corruption warnings."
         },
         {
           "id": "reset_windows_update",
@@ -216,7 +412,19 @@
           "service": "maintenance",
           "method": "reset_windows_update",
           "requires_admin": true,
-          "tags": ["updates", "repair", "admin"]
+          "tags": [
+            "updates",
+            "repair",
+            "admin"
+          ],
+          "category": "System Repair",
+          "requires_restart": false,
+          "detailed_description": "Resets Windows Update components, clears caches, and restarts services. This can resolve stuck updates and corrupted update downloads.",
+          "risk_level": "medium",
+          "recommended_frequency": "quarterly",
+          "cooldown_days": 30,
+          "notes": "May need to re-download updates after the reset.",
+          "when_to_use": "When Windows Update fails or remains stuck."
         }
       ]
     },
@@ -235,7 +443,17 @@
           "service": "optimization",
           "method": "disable_telemetry",
           "requires_admin": true,
-          "tags": ["privacy", "admin"]
+          "tags": [
+            "privacy",
+            "admin"
+          ],
+          "category": "Privacy",
+          "requires_restart": false,
+          "detailed_description": "Reduces diagnostic data collection to the minimum allowed by Windows. This limits telemetry while keeping core services functional.",
+          "risk_level": "medium",
+          "recommended_frequency": "once",
+          "notes": "May affect some Microsoft services that rely on diagnostics.",
+          "when_to_use": "When you want to minimize data collection."
         },
         {
           "id": "disable_activity_history",
@@ -245,7 +463,16 @@
           "service": "optimization",
           "method": "disable_activity_history",
           "requires_admin": false,
-          "tags": ["privacy"]
+          "tags": [
+            "privacy"
+          ],
+          "category": "Privacy",
+          "requires_restart": false,
+          "detailed_description": "Disables activity history and Timeline tracking. This prevents Windows from storing app and file usage across devices.",
+          "risk_level": "medium",
+          "recommended_frequency": "once",
+          "notes": "May affect Timeline and cross-device activity sync.",
+          "when_to_use": "When you prefer not to keep activity history."
         },
         {
           "id": "disable_advertising_id",
@@ -255,7 +482,16 @@
           "service": "optimization",
           "method": "disable_advertising_id",
           "requires_admin": false,
-          "tags": ["privacy"]
+          "tags": [
+            "privacy"
+          ],
+          "category": "Privacy",
+          "requires_restart": false,
+          "detailed_description": "Disables the Advertising ID used for personalized ads. This reduces targeted advertising across Windows apps.",
+          "risk_level": "medium",
+          "recommended_frequency": "once",
+          "notes": "May affect personalized experiences in some apps.",
+          "when_to_use": "When you want less ad tracking."
         },
         {
           "id": "disable_cortana",
@@ -265,7 +501,17 @@
           "service": "optimization",
           "method": "disable_cortana",
           "requires_admin": false,
-          "tags": ["privacy", "performance"]
+          "tags": [
+            "privacy",
+            "performance"
+          ],
+          "category": "Privacy",
+          "requires_restart": false,
+          "detailed_description": "Turns off Cortana assistant and background processes. This can reduce background usage and improve privacy.",
+          "risk_level": "medium",
+          "recommended_frequency": "once",
+          "notes": "May affect voice assistant features and some Microsoft services.",
+          "when_to_use": "When you do not use Cortana and want fewer background tasks."
         }
       ]
     },
@@ -284,7 +530,18 @@
           "service": "optimization",
           "method": "disable_sysmain",
           "requires_admin": true,
-          "tags": ["performance", "memory", "admin"]
+          "tags": [
+            "performance",
+            "memory",
+            "admin"
+          ],
+          "category": "SysMain",
+          "requires_restart": false,
+          "detailed_description": "Stops the SysMain (Superfetch) service to reduce disk and memory usage. This can help on SSD systems where prefetching provides less benefit.",
+          "risk_level": "low",
+          "recommended_frequency": "once",
+          "notes": "Effects vary by hardware; SSD systems often benefit more than HDDs.",
+          "when_to_use": "When you have an SSD and want to reduce background disk activity."
         },
         {
           "id": "enable_sysmain",
@@ -294,7 +551,17 @@
           "service": "optimization",
           "method": "enable_sysmain",
           "requires_admin": true,
-          "tags": ["memory", "admin"]
+          "tags": [
+            "memory",
+            "admin"
+          ],
+          "category": "SysMain",
+          "requires_restart": false,
+          "detailed_description": "Re-enables the SysMain service for improved app preloading on HDDs or low-RAM systems. This can speed up app launches in some scenarios.",
+          "risk_level": "low",
+          "recommended_frequency": "once",
+          "notes": "Effects vary by hardware; HDD systems often benefit more than SSDs.",
+          "when_to_use": "When using an HDD or low-RAM system where preloading helps."
         },
         {
           "id": "sysmain_status",
@@ -304,7 +571,16 @@
           "service": "optimization",
           "method": "get_sysmain_status",
           "requires_admin": false,
-          "tags": ["info"]
+          "tags": [
+            "info"
+          ],
+          "category": "SysMain",
+          "requires_restart": false,
+          "detailed_description": "Checks the current SysMain status and provides guidance based on your hardware. This is informational and does not change settings.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Effects vary by hardware.",
+          "when_to_use": "When deciding whether SysMain should be enabled."
         }
       ]
     },
@@ -323,7 +599,16 @@
           "service": "optimization",
           "method": "disable_animations",
           "requires_admin": false,
-          "tags": ["performance", "visual"]
+          "tags": [
+            "performance",
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Turns off window animations such as minimize and fade effects. This can make the system feel snappier on older hardware.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want faster UI responsiveness."
         },
         {
           "id": "enable_animations",
@@ -333,7 +618,15 @@
           "service": "optimization",
           "method": "enable_animations",
           "requires_admin": false,
-          "tags": ["visual"]
+          "tags": [
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Restores all Windows animation effects for a smoother visual experience. This is purely cosmetic.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want the full visual experience."
         },
         {
           "id": "disable_transparency",
@@ -343,7 +636,16 @@
           "service": "optimization",
           "method": "disable_transparency",
           "requires_admin": false,
-          "tags": ["performance", "visual"]
+          "tags": [
+            "performance",
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Turns off transparency effects like Mica and Acrylic to reduce GPU load. This can improve performance on lower-end GPUs.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want to reduce visual effects to gain performance."
         },
         {
           "id": "enable_transparency",
@@ -353,7 +655,15 @@
           "service": "optimization",
           "method": "enable_transparency",
           "requires_admin": false,
-          "tags": ["visual"]
+          "tags": [
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Re-enables transparency effects for a more modern Windows look. This is purely visual.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want Windows visual effects restored."
         },
         {
           "id": "best_performance",
@@ -363,7 +673,16 @@
           "service": "optimization",
           "method": "set_best_performance",
           "requires_admin": false,
-          "tags": ["performance", "visual"]
+          "tags": [
+            "performance",
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Applies a set of visual settings that favor performance over appearance. This reduces animations and effects for faster UI response.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want maximum performance."
         },
         {
           "id": "best_appearance",
@@ -373,7 +692,15 @@
           "service": "optimization",
           "method": "set_best_appearance",
           "requires_admin": false,
-          "tags": ["visual"]
+          "tags": [
+            "visual"
+          ],
+          "category": "Visual Effects",
+          "requires_restart": false,
+          "detailed_description": "Restores visual effects for the best appearance. This favors smooth UI animations and transparency.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want Windows looking its best."
         }
       ]
     },
@@ -392,7 +719,17 @@
           "service": "optimization",
           "method": "disable_widgets",
           "requires_admin": false,
-          "tags": ["performance", "memory"]
+          "tags": [
+            "performance",
+            "memory"
+          ],
+          "category": "Background Services",
+          "requires_restart": false,
+          "detailed_description": "Disables Windows Widgets and related background processes. This can reclaim memory and remove the taskbar Widgets button.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Removes the Widgets button from the taskbar.",
+          "when_to_use": "When you do not use Widgets and want fewer background processes."
         },
         {
           "id": "enable_widgets",
@@ -402,7 +739,13 @@
           "service": "optimization",
           "method": "enable_widgets",
           "requires_admin": false,
-          "tags": []
+          "tags": [],
+          "category": "Background Services",
+          "requires_restart": false,
+          "detailed_description": "Re-enables Windows Widgets and the taskbar button. This restores the Widgets experience.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want Widgets available on the taskbar."
         },
         {
           "id": "disable_search_web",
@@ -412,7 +755,17 @@
           "service": "optimization",
           "method": "disable_search_highlights",
           "requires_admin": false,
-          "tags": ["performance", "privacy"]
+          "tags": [
+            "performance",
+            "privacy"
+          ],
+          "category": "Background Services",
+          "requires_restart": false,
+          "detailed_description": "Removes web results from Start menu search. This makes search results local-only and can improve privacy.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Removes web results from search.",
+          "when_to_use": "When you want local-only search results."
         },
         {
           "id": "disable_delivery_opt",
@@ -422,7 +775,17 @@
           "service": "optimization",
           "method": "disable_delivery_optimization",
           "requires_admin": true,
-          "tags": ["network", "admin"]
+          "tags": [
+            "network",
+            "admin"
+          ],
+          "category": "Background Services",
+          "requires_restart": false,
+          "detailed_description": "Disables Delivery Optimization to stop sharing Windows Updates with other PCs. This can save bandwidth in metered environments.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Affects Windows Update sharing behavior.",
+          "when_to_use": "When you want to limit update bandwidth usage."
         },
         {
           "id": "enable_delivery_opt",
@@ -432,7 +795,17 @@
           "service": "optimization",
           "method": "enable_delivery_optimization",
           "requires_admin": true,
-          "tags": ["network", "admin"]
+          "tags": [
+            "network",
+            "admin"
+          ],
+          "category": "Background Services",
+          "requires_restart": false,
+          "detailed_description": "Re-enables Delivery Optimization to allow update sharing across your network. This can speed up updates on multiple devices.",
+          "risk_level": "low",
+          "recommended_frequency": "as_needed",
+          "notes": "Affects Windows Update sharing behavior.",
+          "when_to_use": "When you want to share updates on your network."
         }
       ]
     },
@@ -451,7 +824,16 @@
           "service": "optimization",
           "method": "enable_game_mode",
           "requires_admin": false,
-          "tags": ["gaming", "performance"]
+          "tags": [
+            "gaming",
+            "performance"
+          ],
+          "category": "Gaming",
+          "requires_restart": false,
+          "detailed_description": "Turns on Windows Game Mode to prioritize gaming performance. This helps prevent updates and background tasks from interrupting gameplay.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you play games and want higher priority."
         },
         {
           "id": "disable_game_mode",
@@ -461,7 +843,15 @@
           "service": "optimization",
           "method": "disable_game_mode",
           "requires_admin": false,
-          "tags": ["gaming"]
+          "tags": [
+            "gaming"
+          ],
+          "category": "Gaming",
+          "requires_restart": false,
+          "detailed_description": "Turns off Windows Game Mode. This returns the system to normal scheduling behavior.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you no longer want Game Mode active."
         },
         {
           "id": "enable_hags",
@@ -472,7 +862,18 @@
           "method": "enable_hags",
           "requires_admin": true,
           "requires_restart": true,
-          "tags": ["gaming", "performance", "admin", "restart"]
+          "tags": [
+            "gaming",
+            "performance",
+            "admin",
+            "restart"
+          ],
+          "category": "Gaming",
+          "detailed_description": "Enables Hardware-Accelerated GPU Scheduling to reduce GPU latency. This can improve performance for some games but requires a restart.",
+          "risk_level": "medium",
+          "recommended_frequency": "as_needed",
+          "notes": "Requires restart and may affect some games.",
+          "when_to_use": "When testing performance improvements for gaming."
         },
         {
           "id": "disable_hags",
@@ -483,7 +884,17 @@
           "method": "disable_hags",
           "requires_admin": true,
           "requires_restart": true,
-          "tags": ["gaming", "admin", "restart"]
+          "tags": [
+            "gaming",
+            "admin",
+            "restart"
+          ],
+          "category": "Gaming",
+          "detailed_description": "Disables Hardware-Accelerated GPU Scheduling if you encounter instability. This can improve compatibility but requires a restart.",
+          "risk_level": "medium",
+          "recommended_frequency": "as_needed",
+          "notes": "Requires restart and may affect some games.",
+          "when_to_use": "When you experience issues with HAGS enabled."
         },
         {
           "id": "disable_vbs",
@@ -496,7 +907,19 @@
           "requires_restart": true,
           "requires_confirmation": true,
           "warning": "This reduces protection against kernel-level malware",
-          "tags": ["gaming", "performance", "admin", "restart", "security"]
+          "tags": [
+            "gaming",
+            "performance",
+            "admin",
+            "restart",
+            "security"
+          ],
+          "category": "Gaming",
+          "detailed_description": "Disables Virtualization-Based Security to improve gaming performance by removing the hypervisor layer. This increases FPS but reduces security protections.",
+          "risk_level": "high",
+          "recommended_frequency": "once",
+          "notes": "SECURITY: Reduces protection against kernel-level malware.",
+          "when_to_use": "Only on dedicated gaming PCs where performance is the priority."
         },
         {
           "id": "enable_vbs",
@@ -507,7 +930,16 @@
           "method": "enable_vbs",
           "requires_admin": true,
           "requires_restart": true,
-          "tags": ["security", "admin", "restart"]
+          "tags": [
+            "security",
+            "admin",
+            "restart"
+          ],
+          "category": "Gaming",
+          "detailed_description": "Re-enables Virtualization-Based Security to restore kernel protections. This improves security but may slightly reduce gaming performance.",
+          "risk_level": "safe",
+          "recommended_frequency": "once",
+          "when_to_use": "When you want to restore Windows security protections."
         }
       ]
     },
@@ -525,9 +957,20 @@
           "description": "Standard power plan - balances performance and energy",
           "service": "optimization",
           "method": "set_power_plan",
-          "method_args": ["balanced"],
+          "method_args": [
+            "balanced"
+          ],
           "requires_admin": true,
-          "tags": ["power", "admin"]
+          "tags": [
+            "power",
+            "admin"
+          ],
+          "category": "Power Plan",
+          "requires_restart": false,
+          "detailed_description": "Switches to the Balanced power plan for a mix of performance and energy efficiency. This is the default Windows recommendation.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "For everyday use with a balance of power and efficiency."
         },
         {
           "id": "high_performance_plan",
@@ -536,9 +979,21 @@
           "description": "Maximum CPU performance for desktops and gaming",
           "service": "optimization",
           "method": "set_power_plan",
-          "method_args": ["high_performance"],
+          "method_args": [
+            "high_performance"
+          ],
           "requires_admin": true,
-          "tags": ["power", "performance", "admin"]
+          "tags": [
+            "power",
+            "performance",
+            "admin"
+          ],
+          "category": "Power Plan",
+          "requires_restart": false,
+          "detailed_description": "Switches to High Performance power plan for maximum CPU performance. This increases power usage to reduce throttling.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want maximum performance on a plugged-in system."
         },
         {
           "id": "ultimate_performance_plan",
@@ -547,9 +1002,21 @@
           "description": "Hidden maximum performance plan for workstations",
           "service": "optimization",
           "method": "set_power_plan",
-          "method_args": ["ultimate_performance"],
+          "method_args": [
+            "ultimate_performance"
+          ],
           "requires_admin": true,
-          "tags": ["power", "performance", "admin"]
+          "tags": [
+            "power",
+            "performance",
+            "admin"
+          ],
+          "category": "Power Plan",
+          "requires_restart": false,
+          "detailed_description": "Enables the Ultimate Performance plan for workstation-level performance. This uses more energy to minimize power-saving latency.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "On desktops where power use is not a concern."
         },
         {
           "id": "power_options",
@@ -559,7 +1026,15 @@
           "service": "optimization",
           "method": "open_power_options",
           "requires_admin": false,
-          "tags": ["power"]
+          "tags": [
+            "power"
+          ],
+          "category": "Power Plan",
+          "requires_restart": false,
+          "detailed_description": "Opens the Windows Power Options control panel for advanced power settings. This is informational and does not change settings by itself.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want to review or change power settings."
         }
       ]
     },
@@ -577,10 +1052,21 @@
           "description": "Comprehensive system cleaning utility",
           "service": "cleanup",
           "method": "launch_ccleaner",
-          "method_args": ["$config_manager"],
+          "method_args": [
+            "$config_manager"
+          ],
           "requires_admin": false,
           "external": true,
-          "tags": ["external", "cleanup"]
+          "tags": [
+            "external",
+            "cleanup"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches CCleaner if installed. This gives you access to deep cleaning options outside the app.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you prefer using CCleaner for cleanup."
         },
         {
           "id": "bleachbit",
@@ -589,11 +1075,23 @@
           "description": "Privacy-focused open source cleaner",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["bleachbit"],
+          "method_args": [
+            "bleachbit"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.bleachbit.org/download",
-          "tags": ["external", "cleanup", "privacy"]
+          "tags": [
+            "external",
+            "cleanup",
+            "privacy"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches BleachBit for privacy-focused cleanup and disk space reclamation. This tool is external to App Launcher.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want a privacy-focused cleaner."
         },
         {
           "id": "wise_memory",
@@ -602,11 +1100,22 @@
           "description": "Aggressive RAM optimization utility",
           "service": "cleanup",
           "method": "launch_wise_memory_cleaner",
-          "method_args": ["$config_manager"],
+          "method_args": [
+            "$config_manager"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.wisecleaner.com/wise-memory-optimizer.html",
-          "tags": ["external", "memory"]
+          "tags": [
+            "external",
+            "memory"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches Wise Memory Cleaner to aggressively free RAM. This is an external tool with its own controls.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want third-party RAM optimization."
         },
         {
           "id": "treesize",
@@ -615,11 +1124,22 @@
           "description": "Visual disk space analyzer - find large files",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["treesize"],
+          "method_args": [
+            "treesize"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.jam-software.com/treesize_free",
-          "tags": ["external", "disk"]
+          "tags": [
+            "external",
+            "disk"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches TreeSize Free to visualize disk usage and find large files. This helps identify where storage is being used.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When investigating disk space usage."
         },
         {
           "id": "everything",
@@ -628,11 +1148,22 @@
           "description": "Instant file search (much faster than Windows)",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["everything"],
+          "method_args": [
+            "everything"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.voidtools.com/downloads/",
-          "tags": ["external", "search"]
+          "tags": [
+            "external",
+            "search"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches Everything Search for instant file lookup. This tool indexes files for extremely fast searching.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you need to locate files quickly."
         },
         {
           "id": "bcuninstaller",
@@ -641,11 +1172,22 @@
           "description": "Thorough software removal with leftover cleanup",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["bcuninstaller"],
+          "method_args": [
+            "bcuninstaller"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.bcuninstaller.com/",
-          "tags": ["external", "cleanup"]
+          "tags": [
+            "external",
+            "cleanup"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches BCUninstaller for thorough software removal and leftover cleanup. This is a third-party uninstaller.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When uninstalling apps with leftover files."
         },
         {
           "id": "crystaldiskinfo",
@@ -654,11 +1196,23 @@
           "description": "Disk health monitor showing S.M.A.R.T. data",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["crystaldiskinfo"],
+          "method_args": [
+            "crystaldiskinfo"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://crystalmark.info/en/download/",
-          "tags": ["external", "disk", "info"]
+          "tags": [
+            "external",
+            "disk",
+            "info"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches CrystalDiskInfo to view disk health and SMART data. This helps monitor drive health.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When checking drive health and SMART stats."
         },
         {
           "id": "hwinfo",
@@ -667,11 +1221,22 @@
           "description": "Comprehensive hardware monitoring",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["hwinfo"],
+          "method_args": [
+            "hwinfo"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.hwinfo.com/download/",
-          "tags": ["external", "info"]
+          "tags": [
+            "external",
+            "info"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches HWiNFO for detailed hardware monitoring. Useful for diagnostics and performance tuning.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you need detailed hardware information."
         },
         {
           "id": "cpuz",
@@ -680,11 +1245,22 @@
           "description": "Detailed system information utility",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["cpuz"],
+          "method_args": [
+            "cpuz"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.cpuid.com/softwares/cpu-z.html",
-          "tags": ["external", "info"]
+          "tags": [
+            "external",
+            "info"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches CPU-Z for detailed CPU and system information. This is a read-only diagnostic utility.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want detailed CPU or hardware info."
         },
         {
           "id": "autoruns",
@@ -693,11 +1269,23 @@
           "description": "Microsoft Sysinternals comprehensive startup manager",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["autoruns"],
+          "method_args": [
+            "autoruns"
+          ],
           "requires_admin": true,
           "external": true,
           "download_url": "https://learn.microsoft.com/sysinternals/downloads/autoruns",
-          "tags": ["external", "startup", "admin"]
+          "tags": [
+            "external",
+            "startup",
+            "admin"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches Autoruns to manage startup entries and services. This is a powerful diagnostic tool.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When troubleshooting startup programs."
         },
         {
           "id": "process_lasso",
@@ -706,11 +1294,22 @@
           "description": "Process priority and CPU affinity manager",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["process_lasso"],
+          "method_args": [
+            "process_lasso"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://bitsum.com/processlasso/",
-          "tags": ["external", "performance"]
+          "tags": [
+            "external",
+            "performance"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches Process Lasso for managing process priorities and CPU affinity. This can help performance tuning.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When optimizing process priorities."
         },
         {
           "id": "shutup10",
@@ -719,11 +1318,22 @@
           "description": "Windows privacy settings manager",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["shutup10"],
+          "method_args": [
+            "shutup10"
+          ],
           "requires_admin": false,
           "external": true,
           "download_url": "https://www.oo-software.com/en/shutup10",
-          "tags": ["external", "privacy"]
+          "tags": [
+            "external",
+            "privacy"
+          ],
+          "category": "External Tools",
+          "requires_restart": false,
+          "detailed_description": "Launches O&O ShutUp10++ for privacy configuration. This provides detailed privacy controls.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When adjusting Windows privacy settings."
         }
       ]
     },
@@ -741,9 +1351,20 @@
           "description": "Launch GitHub Desktop for visual git management",
           "service": "external",
           "method": "launch_tool",
-          "method_args": ["github_desktop"],
+          "method_args": [
+            "github_desktop"
+          ],
           "requires_admin": false,
-          "tags": ["developer", "git"]
+          "tags": [
+            "developer",
+            "git"
+          ],
+          "category": "Developer",
+          "requires_restart": false,
+          "detailed_description": "Launches GitHub Desktop for visual git management. This helps manage commits, branches, and sync.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you want a visual git workflow."
         },
         {
           "id": "open_terminal",
@@ -753,7 +1374,15 @@
           "service": "process",
           "method": "open_terminal",
           "requires_admin": false,
-          "tags": ["developer"]
+          "tags": [
+            "developer"
+          ],
+          "category": "Developer",
+          "requires_restart": false,
+          "detailed_description": "Opens a terminal at the project root for quick command-line access. Useful for running scripts and git commands.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you need to run commands in the project folder."
         },
         {
           "id": "launch_debugger",
@@ -763,7 +1392,16 @@
           "service": "process",
           "method": "launch_with_debugger",
           "requires_admin": false,
-          "tags": ["developer", "debug"]
+          "tags": [
+            "developer",
+            "debug"
+          ],
+          "category": "Developer",
+          "requires_restart": false,
+          "detailed_description": "Launches the project in your IDE with a debugger attached. This helps troubleshoot issues during development.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When you need to debug a project."
         }
       ]
     }

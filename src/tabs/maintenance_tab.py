@@ -20,6 +20,7 @@ from src.theme import COLORS
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
 from src.components.utility_button import UtilityButton
+from src.utils.quick_cleanup import QuickCleanupRunner
 from src.services.cleanup_service import CleanupService
 
 # Try to import logger
@@ -113,6 +114,20 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         self.setup_ui()
 
     def setup_ui(self):
+        header = ctk.CTkFrame(self, fg_color='transparent')
+        header.pack(fill='x', padx=40, pady=(20, 0))
+
+        quick_cleanup = ctk.CTkButton(
+            header,
+            text="🚀 Run Quick Cleanup",
+            width=220,
+            height=36,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self._run_quick_cleanup
+        )
+        quick_cleanup.pack(anchor='w')
+
         sections = self.tool_registry.get_sections_by_tab("maintenance")
 
         if not sections:
@@ -194,6 +209,10 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         if not success:
             messagebox.showerror("Operation Failed", message)
         return success, message
+
+    def _run_quick_cleanup(self):
+        runner = QuickCleanupRunner(self, self.config_manager, self.tool_registry)
+        runner.start()
 
     def _show_network_stats(self):
         success, stats = self.cleanup_service.get_network_stats()

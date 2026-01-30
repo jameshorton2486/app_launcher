@@ -159,6 +159,10 @@ class ConfigManager:
                 "mode": "dark",
                 "accent_color": "#6c5ce7"
             },
+            "ui": {
+                "show_toasts": True,
+                "show_health_check_on_startup": True
+            },
             "paths": {
                 "downloads_folder": "C:\\Users\\james\\Downloads",
                 "projects_root": "C:\\Users\\james",

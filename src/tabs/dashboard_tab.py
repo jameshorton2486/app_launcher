@@ -19,6 +19,8 @@ if parent_dir not in sys.path:
 from src.theme import COLORS
 from src.utils.constants import TOOLS_FILE
 from src.utils.tool_registry import ToolRegistry
+from src.utils.quick_cleanup import QuickCleanupRunner
+from src.components.smart_monitor import SmartMonitor
 from src.services.cleanup_service import CleanupService
 from src.services.process_service import ProcessService
 from src.services.git_service import GitService
@@ -40,7 +42,8 @@ except Exception:
 class DashboardTab(ctk.CTkScrollableFrame):
     """Dashboard tab for system overview and quick actions."""
 
-    def __init__(self, parent, config_manager, process_service=None, status_bar=None, on_open_downloads=None):
+    def __init__(self, parent, config_manager, process_service=None, status_bar=None,
+                 on_open_downloads=None, on_health_update=None):
         super().__init__(
             parent,
             fg_color=COLORS['bg_primary'],
@@ -56,12 +59,18 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
+        self.smart_monitor = SmartMonitor()
+        self.on_health_update = on_health_update
 
         self._system_widgets = {}
         self._project_rows = []
+        self._health_widgets = {}
+        self._health_recommendations = None
 
         self.setup_ui()
         self._refresh_system_stats()
+        self._start_health_monitor()
+        self.bind("<Destroy>", self._on_destroy)
 
     def setup_ui(self):
         """Build dashboard layout."""
@@ -88,9 +97,12 @@ class DashboardTab(ctk.CTkScrollableFrame):
         )
         subtitle.pack(fill='x', pady=(6, 0))
 
+        actions_row = ctk.CTkFrame(welcome_frame, fg_color='transparent')
+        actions_row.pack(anchor='w', pady=(10, 0))
+
         if self.on_open_downloads:
             open_downloads = ctk.CTkButton(
-                welcome_frame,
+                actions_row,
                 text="Open Downloads Manager",
                 width=200,
                 height=32,
@@ -98,7 +110,18 @@ class DashboardTab(ctk.CTkScrollableFrame):
                 hover_color=COLORS['bg_hover'],
                 command=self.on_open_downloads
             )
-            open_downloads.pack(anchor='w', pady=(10, 0))
+            open_downloads.pack(side='left')
+
+        quick_cleanup = ctk.CTkButton(
+            actions_row,
+            text="🚀 Run Quick Cleanup",
+            width=200,
+            height=32,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=self._run_quick_cleanup
+        )
+        quick_cleanup.pack(side='left', padx=(12, 0))
 
         # Cards grid
         grid_frame = ctk.CTkFrame(self, fg_color='transparent')
@@ -113,6 +136,10 @@ class DashboardTab(ctk.CTkScrollableFrame):
         actions_card = self._create_card(grid_frame, "Quick Actions")
         actions_card.grid(row=0, column=1, padx=(10, 0), pady=10, sticky='nsew')
         self._build_quick_actions(actions_card)
+
+        health_card = self._create_health_card(self)
+        health_card.pack(fill='x', padx=40, pady=16)
+        self._build_system_health(health_card)
 
         projects_card = self._create_card(self, "Recent Projects")
         projects_card.pack(fill='x', padx=40, pady=16)
@@ -137,6 +164,46 @@ class DashboardTab(ctk.CTkScrollableFrame):
             anchor='w'
         )
         header.pack(fill='x', padx=24, pady=(20, 12))
+
+        content = ctk.CTkFrame(card, fg_color='transparent')
+        content.pack(fill='both', expand=True, padx=24, pady=(0, 20))
+
+        shadow.content = content
+        return shadow
+
+    def _create_health_card(self, parent):
+        shadow = ctk.CTkFrame(parent, fg_color=COLORS['border_default'], corner_radius=16)
+        card = ctk.CTkFrame(
+            shadow,
+            fg_color=COLORS['bg_secondary'],
+            corner_radius=16,
+            border_width=1,
+            border_color=COLORS['border_subtle']
+        )
+        card.pack(fill='both', expand=True, padx=0, pady=(0, 2))
+
+        header = ctk.CTkFrame(card, fg_color='transparent')
+        header.pack(fill='x', padx=24, pady=(20, 12))
+
+        title = ctk.CTkLabel(
+            header,
+            text="🩺 System Health",
+            font=('Segoe UI', 16, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        )
+        title.pack(side='left')
+
+        scan_btn = ctk.CTkButton(
+            header,
+            text="Scan",
+            width=100,
+            height=28,
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['bg_hover'],
+            command=self._run_health_scan
+        )
+        scan_btn.pack(side='right')
 
         content = ctk.CTkFrame(card, fg_color='transparent')
         content.pack(fill='both', expand=True, padx=24, pady=(0, 20))
@@ -212,6 +279,58 @@ class DashboardTab(ctk.CTkScrollableFrame):
         )
         value_label.pack(side='left', padx=(10, 0))
         return value_label
+
+    def _build_system_health(self, card):
+        content = card.content
+        self._health_widgets['ram'] = self._build_health_row(content, "RAM Usage")
+        self._health_widgets['disk'] = self._build_health_row(content, "Disk Space")
+        self._health_widgets['temp'] = self._build_health_row(content, "Temp Files")
+        self._health_widgets['recycle'] = self._build_health_row(content, "Recycle Bin")
+        self._health_widgets['uptime'] = self._build_health_row(content, "System Uptime")
+        self._health_widgets['maintenance'] = self._build_health_row(content, "Last Cleanup")
+
+        ctk.CTkLabel(
+            content,
+            text="💡 Recommendations",
+            font=('Segoe UI', 14, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        ).pack(fill='x', pady=(16, 6))
+
+        self._health_recommendations = ctk.CTkFrame(content, fg_color='transparent')
+        self._health_recommendations.pack(fill='x')
+
+    def _build_health_row(self, parent, label):
+        row = ctk.CTkFrame(parent, fg_color='transparent')
+        row.pack(fill='x', pady=6)
+
+        label_widget = ctk.CTkLabel(
+            row,
+            text=label,
+            font=('Segoe UI', 12, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        )
+        label_widget.pack(side='left')
+
+        value_label = ctk.CTkLabel(
+            row,
+            text="--",
+            font=('Segoe UI', 12),
+            text_color=COLORS['text_secondary'],
+            anchor='e'
+        )
+        value_label.pack(side='right')
+
+        status_label = ctk.CTkLabel(
+            row,
+            text="🟢",
+            font=('Segoe UI', 12),
+            text_color=COLORS['text_secondary']
+        )
+        status_label.pack(side='right', padx=(0, 10))
+
+        return {"value": value_label, "status": status_label}
 
     def _build_quick_actions(self, card):
         content = card.content
@@ -354,6 +473,10 @@ class DashboardTab(ctk.CTkScrollableFrame):
             import tkinter.messagebox as messagebox
             messagebox.showerror("Action Failed", message)
 
+    def _run_quick_cleanup(self):
+        runner = QuickCleanupRunner(self, self.config_manager, self.tool_registry)
+        runner.start()
+
     def _show_network_stats(self):
         success, stats = self.cleanup_service.get_network_stats()
         if success:
@@ -441,6 +564,99 @@ class DashboardTab(ctk.CTkScrollableFrame):
             logger.debug(f"System stats error: {exc}")
 
         self.after(5000, self._refresh_system_stats)
+
+    def _start_health_monitor(self):
+        self.smart_monitor.start(
+            self._on_health_update,
+            dispatch=lambda func: self.after(0, func)
+        )
+        self._run_health_scan()
+
+    def _run_health_scan(self):
+        def run():
+            result = self.smart_monitor.scan()
+            try:
+                self.after(0, lambda r=result: self._on_health_update(r))
+            except Exception:
+                pass
+        threading.Thread(target=run, daemon=True).start()
+
+    def _on_health_update(self, result: dict):
+        metrics = result.get("metrics", {})
+        for key, widget in self._health_widgets.items():
+            metric = metrics.get(key, {})
+            value = metric.get("value", "--")
+            status = metric.get("status", "green")
+            widget["value"].configure(text=value)
+            widget["status"].configure(text=self._status_icon(status))
+
+        self._render_recommendations(result.get("recommendations", []))
+
+        if callable(self.on_health_update):
+            self.on_health_update(result)
+
+    def _render_recommendations(self, recommendations):
+        if not self._health_recommendations:
+            return
+        for child in self._health_recommendations.winfo_children():
+            child.destroy()
+
+        if not recommendations:
+            ctk.CTkLabel(
+                self._health_recommendations,
+                text="All systems look good.",
+                font=('Segoe UI', 11),
+                text_color=COLORS['text_secondary'],
+                anchor='w'
+            ).pack(fill='x')
+            return
+
+        for rec in recommendations:
+            row = ctk.CTkFrame(self._health_recommendations, fg_color='transparent')
+            row.pack(fill='x', pady=4)
+
+            ctk.CTkLabel(
+                row,
+                text=rec.get("message", ""),
+                font=('Segoe UI', 11),
+                text_color=COLORS['text_secondary'],
+                anchor='w',
+                wraplength=600,
+                justify='left'
+            ).pack(side='left', fill='x', expand=True)
+
+            tool_id = rec.get("tool_id")
+            action = rec.get("action")
+            if tool_id or action:
+                btn = ctk.CTkButton(
+                    row,
+                    text="Run Now",
+                    width=90,
+                    height=26,
+                    fg_color=COLORS['bg_tertiary'],
+                    hover_color=COLORS['bg_hover'],
+                    command=lambda tid=tool_id, act=action: self._run_recommendation(tid, act)
+                )
+                btn.pack(side='right', padx=(10, 0))
+
+    def _run_recommendation(self, tool_id: str | None, action: str | None):
+        if action == "quick_cleanup":
+            return self._run_quick_cleanup()
+        if tool_id:
+            return self._run_tool(tool_id)
+
+    @staticmethod
+    def _status_icon(status: str) -> str:
+        if status == "red":
+            return "🔴"
+        if status == "yellow":
+            return "🟡"
+        return "🟢"
+
+    def _on_destroy(self, event=None):
+        if event is None or event.widget == self:
+            if self.smart_monitor:
+                self.smart_monitor.stop()
 
     def _set_system_stat(self, key, value, progress):
         widget = self._system_widgets.get(key)

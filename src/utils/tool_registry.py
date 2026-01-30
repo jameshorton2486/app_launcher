@@ -6,6 +6,8 @@ Loads tool definitions and routes execution to services.
 from typing import Any, Dict, List, Optional, Tuple
 import json
 import os
+from datetime import datetime, timedelta
+import re
 
 # Try to import logger
 try:
@@ -19,6 +21,18 @@ try:
     from src.components.toast import ToastManager
 except Exception:
     ToastManager = None
+
+try:
+    from src.utils.tool_usage import ToolUsageStore
+except Exception:
+    ToolUsageStore = None
+
+try:
+    import tkinter.messagebox as messagebox
+    import tkinter as tk
+except Exception:
+    messagebox = None
+    tk = None
 
 
 class ToolRegistry:
@@ -106,21 +120,23 @@ class ToolRegistry:
         }
 
         try:
+            if not self._check_cooldown(tool):
+                return False, "Cancelled"
             result = method(*resolved_args, **resolved_kwargs)
             success, message = self._normalize_result(result)
+            self._record_usage(tool, success, message)
             self._notify_toast(tool, success, message, config_manager)
             return success, message
         except Exception as exc:
             logger.error(f"Tool execution failed for {tool_id}: {exc}")
             message = str(exc)
+            self._record_usage(tool, False, message)
             self._notify_toast(tool, False, message, config_manager)
             return False, message
 
     def search_tools(self, query: str) -> List[dict]:
         """Search tools by query across IDs, titles, descriptions, and tags"""
-        if not query:
-            return []
-        query_text = str(query).strip().lower()
+        query_text = str(query or "").strip().lower()
         results: List[dict] = []
 
         for section in self._sections:
@@ -130,7 +146,7 @@ class ToolRegistry:
             for tool in section.get("tools", []):
                 if not isinstance(tool, dict):
                     continue
-                if self._tool_matches_query(tool, section_title, query_text):
+                if not query_text or self._tool_matches_query(tool, section_title, query_text):
                     tool_entry = self._tool_index.get(tool.get("id"), tool)
                     results.append(tool_entry)
         return results
@@ -248,12 +264,92 @@ class ToolRegistry:
         except Exception:
             pass
 
+    def _record_usage(self, tool: Dict[str, Any], success: bool, message: str):
+        if not ToolUsageStore:
+            return
+        try:
+            store = ToolUsageStore()
+            freed_mb = self._parse_freed_mb(message)
+            store.record_run(tool.get("id", "unknown"), success, message, freed_mb=freed_mb)
+        except Exception:
+            pass
+
+    def _check_cooldown(self, tool: Dict[str, Any]) -> bool:
+        if not ToolUsageStore:
+            return True
+        cooldown = tool.get("cooldown_days")
+        if not cooldown:
+            return True
+        tool_id = tool.get("id")
+        if not tool_id:
+            return True
+
+        store = ToolUsageStore()
+        last_run = store.get_last_run(tool_id)
+        if not last_run:
+            return True
+
+        try:
+            last_dt = datetime.fromisoformat(last_run)
+        except Exception:
+            return True
+
+        now = datetime.utcnow()
+        delta = now - last_dt
+        if delta.days >= int(cooldown):
+            return True
+
+        days_ago = max(0, delta.days)
+        title = f"{tool.get('title', tool_id)} cooldown"
+        note = tool.get("notes") or "Running this tool too frequently can cause issues."
+        recommended = tool.get("recommended_frequency", "as_needed")
+        warning = (
+            f"You ran {tool.get('title', tool_id)} {days_ago} days ago.\n\n"
+            f"{note}\n\n"
+            f"Recommended: Wait at least {cooldown} days between runs.\n"
+            f"Frequency: {recommended}\n\n"
+            "Run anyway?"
+        )
+
+        return self._prompt_user(title, warning)
+
+    def _prompt_user(self, title: str, message: str) -> bool:
+        if not messagebox:
+            return True
+        try:
+            if tk and tk._default_root:
+                return messagebox.askyesno(title, message)
+            root = tk.Tk() if tk else None
+            if root:
+                root.withdraw()
+            result = messagebox.askyesno(title, message)
+            if root:
+                root.destroy()
+            return result
+        except Exception:
+            return True
+
+    @staticmethod
+    def _parse_freed_mb(message: str) -> float:
+        if not message:
+            return 0.0
+        match = re.search(r"([\d\.]+)\s*(GB|MB)", message, re.IGNORECASE)
+        if not match:
+            return 0.0
+        value = float(match.group(1))
+        unit = match.group(2).upper()
+        if unit == "GB":
+            return value * 1024
+        return value
+
     @staticmethod
     def _tool_matches_query(tool: Dict[str, Any], section_title: str, query: str) -> bool:
         searchable = [
             str(tool.get("id", "")),
             str(tool.get("title", "")),
             str(tool.get("description", "")),
+            str(tool.get("detailed_description", "")),
+            str(tool.get("category", "")),
             str(tool.get("subtitle", "")),
             section_title or "",
         ]

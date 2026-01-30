@@ -21,6 +21,9 @@ if parent_dir not in sys.path:
 from src.theme import COLORS
 from src.config_manager import ConfigManager
 from src.utils.constants import SETTINGS_FILE
+from src.utils.tool_usage import ToolUsageStore
+from src.utils.tool_registry import ToolRegistry
+from src.utils.constants import TOOLS_FILE
 
 # Try to import logger
 try:
@@ -143,12 +146,14 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.minimize_to_tray = ctk.BooleanVar(value=self._get_setting('window.minimize_to_tray', True))
         self.check_updates = ctk.BooleanVar(value=self._get_setting('updates.check_on_start', True))
         self.show_toasts = ctk.BooleanVar(value=self._get_setting('ui.show_toasts', True))
+        self.show_health_check = ctk.BooleanVar(value=self._get_setting('ui.show_health_check_on_startup', True))
 
         self._add_checkbox(section.content, "Start with Windows", self.start_with_windows)
         self._add_checkbox(section.content, "Start Minimized", self.start_minimized)
         self._add_checkbox(section.content, "Minimize to Tray on Close", self.minimize_to_tray)
         self._add_checkbox(section.content, "Check for Updates on Start", self.check_updates)
         self._add_checkbox(section.content, "Show Toast Notifications", self.show_toasts)
+        self._add_checkbox(section.content, "Show health check on startup", self.show_health_check)
 
         hotkey_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         hotkey_frame.pack(fill='x', pady=8)
@@ -172,6 +177,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.minimize_to_tray.trace_add("write", lambda *_: self._queue_save())
         self.check_updates.trace_add("write", lambda *_: self._queue_save())
         self.show_toasts.trace_add("write", lambda *_: self._queue_save())
+        self.show_health_check.trace_add("write", lambda *_: self._queue_save())
 
     def _build_appearance_section(self):
         section = CollapsibleSection(self.sections_container, "APPEARANCE")
@@ -342,6 +348,47 @@ class SettingsTab(ctk.CTkScrollableFrame):
             font=('Segoe UI', 11),
             text_color=COLORS['text_secondary']
         ).pack(anchor='w', pady=(4, 0))
+
+        stats_frame = ctk.CTkFrame(section.content, fg_color='transparent')
+        stats_frame.pack(fill='x', pady=8)
+
+        usage_store = ToolUsageStore()
+        stats = usage_store.get_stats()
+        total_tools = stats.get("total_tools_run", 0)
+        total_space_mb = float(stats.get("total_space_freed_mb", 0))
+        total_space_gb = total_space_mb / 1024
+        last_cleanup = stats.get("last_full_cleanup")
+        last_cleanup_display = "Never"
+        if last_cleanup:
+            try:
+                last_cleanup_display = datetime.fromisoformat(last_cleanup).strftime("%B %d, %Y")
+            except Exception:
+                last_cleanup_display = "Unknown"
+
+        tool_registry = ToolRegistry()
+        tool_registry.load_tools(TOOLS_FILE)
+        most_used_id, most_used_count = usage_store.get_most_used()
+        most_used_name = most_used_id
+        if most_used_id:
+            tool = tool_registry.get_tool_by_id(most_used_id) or {}
+            most_used_name = tool.get("title", most_used_id)
+        else:
+            most_used_name = "N/A"
+
+        stats_text = (
+            f"Total tools run: {total_tools}\n"
+            f"Total space freed: {total_space_gb:.1f} GB\n"
+            f"Most used tool: {most_used_name} ({most_used_count} runs)\n"
+            f"Last full cleanup: {last_cleanup_display}"
+        )
+        ctk.CTkLabel(
+            stats_frame,
+            text=stats_text,
+            font=('Segoe UI', 11),
+            text_color=COLORS['text_secondary'],
+            justify='left',
+            anchor='w'
+        ).pack(anchor='w')
 
         links_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         links_frame.pack(fill='x', pady=8)
@@ -518,6 +565,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._set_setting('window.minimize_to_tray', self.minimize_to_tray.get())
         self._set_setting('updates.check_on_start', self.check_updates.get())
         self._set_setting('ui.show_toasts', self.show_toasts.get())
+        self._set_setting('ui.show_health_check_on_startup', self.show_health_check.get())
 
         hotkey_value = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '').lower()
         self._set_setting('window.global_hotkey', hotkey_value)
@@ -609,6 +657,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.minimize_to_tray.set(self._get_setting('window.minimize_to_tray', True))
         self.check_updates.set(self._get_setting('updates.check_on_start', True))
         self.show_toasts.set(self._get_setting('ui.show_toasts', True))
+        self.show_health_check.set(self._get_setting('ui.show_health_check_on_startup', True))
 
         self.theme_mode.set(self._get_setting('theme.mode', 'dark'))
         self.sidebar_style.set(self._get_setting('appearance.sidebar_style', 'Expanded'))

@@ -11,6 +11,10 @@
     "mode": "dark",
     "accent_color": "#6c5ce7"
   },
+  "ui": {
+    "show_toasts": true,
+    "show_health_check_on_startup": true
+  },
   "paths": {
     "downloads_folder": "C:\\Users\\james\\Downloads",
     "projects_root": "C:\\Users\\james",

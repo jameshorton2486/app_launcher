@@ -8,6 +8,7 @@ import sys
 import os
 import threading
 import psutil
+import tkinter as tk
 
 # Add parent directory to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +22,7 @@ from src.components.search_bar import SearchBar
 from src.components.status_bar import StatusBar
 from src.components.toast import ToastManager
 from src.components.command_palette import CommandPalette
+from src.components.help_manual import HelpManual
 from src.tabs.dashboard_tab import DashboardTab
 from src.tabs.projects_tab import ProjectsTab
 from src.tabs.downloads_tab import DownloadsTab
@@ -42,13 +44,14 @@ SIDEBAR_ITEM_HEIGHT = 44
 class SidebarNavItem(ctk.CTkFrame):
     """Sidebar navigation item with hover and active states."""
 
-    def __init__(self, parent, label: str, icon: str, command):
+    def __init__(self, parent, label: str, icon: str, command, show_indicator: bool = False):
         super().__init__(parent, fg_color='transparent', corner_radius=8, height=SIDEBAR_ITEM_HEIGHT)
         self.label_text = label
         self.icon = icon
         self.command = command
         self._active = False
         self._collapsed = False
+        self._show_indicator = show_indicator
 
         self.pack_propagate(False)
 
@@ -65,7 +68,16 @@ class SidebarNavItem(ctk.CTkFrame):
             text_color=COLORS['text_secondary'],
             anchor='w'
         )
-        self.label.pack(fill='both', expand=True, padx=16)
+        self.label.pack(side='left', fill='both', expand=True, padx=16)
+
+        self.indicator = ctk.CTkLabel(
+            self.content,
+            text="●" if self._show_indicator else "",
+            font=('Segoe UI', 10, 'bold'),
+            text_color=COLORS['success'],
+            anchor='e'
+        )
+        self.indicator.pack(side='right', padx=12)
 
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
@@ -98,6 +110,16 @@ class SidebarNavItem(ctk.CTkFrame):
     def set_collapsed(self, collapsed: bool):
         self._collapsed = collapsed
         self.label.configure(text=self._format_label())
+
+    def set_indicator(self, level: str):
+        if not self._show_indicator:
+            return
+        color_map = {
+            "green": COLORS['success'],
+            "yellow": COLORS['warning'],
+            "red": COLORS['error']
+        }
+        self.indicator.configure(text_color=color_map.get(level, COLORS['success']))
 
     def _on_enter(self, event=None):
         if not self._active:
@@ -309,9 +331,11 @@ class AppLauncher(ctk.CTk):
         self._sidebar_expanded = True
         self._nav_items = {}
         self._current_view = None
+        self._startup_health_notified = False
 
         self._build_sidebar()
         self._build_views()
+        self._build_menu()
         self.show_view("Dashboard")
         ToastManager.set_root(self)
 
@@ -326,6 +350,7 @@ class AppLauncher(ctk.CTk):
         self.bind_all("<Control-f>", lambda e: self.focus_search())
         self.bind_all("<Control-r>", lambda e: self.refresh_current_view())
         self.bind_all("<F5>", lambda e: self.refresh_dashboard())
+        self.bind_all("<F1>", lambda e: self.open_help_manual())
         self.bind_all("<Escape>", lambda e: self.handle_escape())
 
         # Update status
@@ -374,7 +399,8 @@ class AppLauncher(ctk.CTk):
                 nav_frame,
                 label=name,
                 icon=icon,
-                command=lambda n=name: self.show_view(n)
+                command=lambda n=name: self.show_view(n),
+                show_indicator=(name == "Dashboard")
             )
             item.pack(fill='x', pady=2)
             self._nav_items[name] = item
@@ -400,6 +426,16 @@ class AppLauncher(ctk.CTk):
         )
         self.version_label.pack(fill='x', pady=(6, 0))
 
+        help_btn = ctk.CTkButton(
+            footer_frame,
+            text="📖 Help Manual",
+            height=28,
+            fg_color=COLORS['bg_secondary'],
+            hover_color=COLORS['bg_hover'],
+            command=self.open_help_manual
+        )
+        help_btn.pack(fill='x', pady=(10, 0))
+
         self.after(1000, self._update_ram_usage)
 
     def _build_views(self):
@@ -411,7 +447,8 @@ class AppLauncher(ctk.CTk):
             self.config_manager,
             process_service=self.process_service,
             status_bar=self.status_bar,
-            on_open_downloads=lambda: self.show_view("Downloads")
+            on_open_downloads=lambda: self.show_view("Downloads"),
+            on_health_update=self._handle_health_update
         )
         self.dashboard_tab.pack(fill='both', expand=True)
         self._dashboard_initialized = True
@@ -521,6 +558,13 @@ class AppLauncher(ctk.CTk):
             CommandPalette(self, self.config_manager)
         except Exception as e:
             logger.error(f"Error opening command palette: {e}", exc_info=True)
+
+    def open_help_manual(self):
+        """Open help manual modal"""
+        try:
+            HelpManual(self)
+        except Exception as e:
+            logger.error(f"Error opening help manual: {e}", exc_info=True)
 
     def show_shortcuts_help(self):
         """Show keyboard shortcuts dialog"""
@@ -851,6 +895,108 @@ class AppLauncher(ctk.CTk):
             self.destroy()
         except Exception as e:
             logger.debug(f"Error destroying window: {e}")
+
+    def _build_menu(self):
+        try:
+            menubar = tk.Menu(self)
+            help_menu = tk.Menu(menubar, tearoff=0)
+            help_menu.add_command(label="Tool Manual", command=self.open_help_manual)
+            menubar.add_cascade(label="Help", menu=help_menu)
+            self.configure(menu=menubar)
+        except Exception as exc:
+            logger.debug(f"Menu setup failed: {exc}")
+
+    def _handle_health_update(self, result: dict):
+        attention = result.get("attention_count", 0)
+        level = "green"
+        if attention >= 3:
+            level = "red"
+        elif attention >= 1:
+            level = "yellow"
+
+        dashboard_item = self._nav_items.get("Dashboard")
+        if dashboard_item:
+            dashboard_item.set_indicator(level)
+
+        if not self._startup_health_notified:
+            enabled = self.config_manager.get_setting('ui.show_health_check_on_startup', True)
+            if enabled and attention >= 3:
+                try:
+                    if ToastManager:
+                        ToastManager.show_info(
+                            "System health check",
+                            f"{attention} items need attention. View Dashboard."
+                        )
+                except Exception:
+                    pass
+                self.after(200, lambda: self._show_health_notification(result))
+            self._startup_health_notified = True
+
+    def _show_health_notification(self, result: dict):
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("System Health Check")
+        dialog.geometry("520x260")
+        dialog.configure(fg_color=COLORS['bg_primary'])
+        dialog.transient(self)
+        dialog.grab_set()
+
+        header = ctk.CTkLabel(
+            dialog,
+            text="🩺 System Health Check",
+            font=('Segoe UI', 16, 'bold'),
+            text_color=COLORS['text_primary']
+        )
+        header.pack(pady=(16, 8))
+
+        body = ctk.CTkFrame(dialog, fg_color='transparent')
+        body.pack(fill='both', expand=True, padx=20)
+
+        issues = []
+        for metric in result.get("metrics", {}).values():
+            if metric.get("status") in {"yellow", "red"}:
+                issues.append(f"{metric.get('label')}: {metric.get('value')}")
+
+        message = "Found items that need attention:\n"
+        message += "\n".join(f"• {issue}" for issue in issues[:4])
+
+        ctk.CTkLabel(
+            body,
+            text=message,
+            font=('Segoe UI', 12),
+            text_color=COLORS['text_secondary'],
+            justify='left',
+            anchor='w'
+        ).pack(fill='x')
+
+        actions = ctk.CTkFrame(dialog, fg_color='transparent')
+        actions.pack(fill='x', padx=20, pady=(10, 16))
+
+        ctk.CTkButton(
+            actions,
+            text="View Details",
+            width=140,
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['bg_hover'],
+            command=lambda: (dialog.destroy(), self.show_view("Dashboard"))
+        ).pack(side='left')
+
+        ctk.CTkButton(
+            actions,
+            text="Run Quick Cleanup",
+            width=160,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=lambda: (dialog.destroy(), self.dashboard_tab._run_quick_cleanup())
+        ).pack(side='left', padx=8)
+
+        ctk.CTkButton(
+            actions,
+            text="Dismiss",
+            width=120,
+            fg_color=COLORS['bg_tertiary'],
+            hover_color=COLORS['bg_hover'],
+            command=dialog.destroy
+        ).pack(side='right')
     
     def run(self):
         """Start the application"""

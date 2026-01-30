@@ -462,3 +462,66 @@ class CleanupService:
     def launch_wise_memory_cleaner(self, config_manager) -> Tuple[bool, str]:
         """Launch Wise Memory Optimizer"""
         return self.launch_external_tool('wise_memory_cleaner', config_manager)
+
+    def clear_browser_cache(self) -> Tuple[bool, str]:
+        """
+        Clear cache from major browsers.
+        Does NOT clear passwords, history, or bookmarks.
+        """
+        total_freed = 0
+        browsers_cleared = []
+
+        def clear_dir(path):
+            nonlocal total_freed
+            if not os.path.exists(path):
+                return 0
+            freed = 0
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    try:
+                        file_path = os.path.join(root, file)
+                        size = os.path.getsize(file_path)
+                        os.remove(file_path)
+                        freed += size
+                    except Exception:
+                        pass
+            total_freed += freed
+            return freed
+
+        # Chrome cache paths
+        chrome_cache = os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cache')
+        chrome_code_cache = os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\User Data\Default\Code Cache')
+
+        # Edge cache paths
+        edge_cache = os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Cache')
+        edge_code_cache = os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Code Cache')
+
+        # Firefox cache path
+        firefox_profiles = os.path.expandvars(r'%LOCALAPPDATA%\Mozilla\Firefox\Profiles')
+
+        # Brave cache path
+        brave_cache = os.path.expandvars(r'%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Cache')
+        brave_code_cache = os.path.expandvars(r'%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Code Cache')
+
+        if clear_dir(chrome_cache) + clear_dir(chrome_code_cache) > 0:
+            browsers_cleared.append("Chrome")
+
+        if clear_dir(edge_cache) + clear_dir(edge_code_cache) > 0:
+            browsers_cleared.append("Edge")
+
+        if os.path.exists(firefox_profiles):
+            cleared_any = False
+            for profile in os.listdir(firefox_profiles):
+                cache_path = os.path.join(firefox_profiles, profile, "cache2")
+                if clear_dir(cache_path) > 0:
+                    cleared_any = True
+            if cleared_any:
+                browsers_cleared.append("Firefox")
+
+        if clear_dir(brave_cache) + clear_dir(brave_code_cache) > 0:
+            browsers_cleared.append("Brave")
+
+        total_freed_mb = total_freed / (1024 * 1024)
+        if not browsers_cleared:
+            return True, "No browser cache found to clear"
+        return True, f"Browser cache cleared: {total_freed_mb:.1f} MB freed from {len(browsers_cleared)} browsers"
