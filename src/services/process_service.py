@@ -55,7 +55,8 @@ class ProcessService:
             logger.info(f"Launched Python script: {script_path}")
             return True, "Launched"
         except Exception as e:
-            logger.error(f"Error launching Python script: {e}")
+            print(f"[ERROR] Launch Python script: {e}")
+            logger.error(f"Error launching Python script: {e}", exc_info=True)
             return False, str(e)
     
     def launch_npm_command(self, path: str, command: str) -> Tuple[bool, str]:
@@ -84,7 +85,8 @@ class ProcessService:
             logger.info(f"Launched npm command: {command} in {path}")
             return True, "Launched"
         except Exception as e:
-            logger.error(f"Error launching npm command: {e}")
+            print(f"[ERROR] Launch npm command: {e}")
+            logger.error(f"Error launching npm command: {e}", exc_info=True)
             return False, str(e)
     
     def launch_powershell_script(self, path: str, script: str) -> Tuple[bool, str]:

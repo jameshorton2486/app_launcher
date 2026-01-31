@@ -11,6 +11,13 @@ import sys
 from typing import Tuple, Optional
 from pathlib import Path
 
+try:
+    from src.utils.logger import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
+
 
 class CleanupService:
     """Service for system cleanup operations"""
@@ -68,6 +75,7 @@ class CleanupService:
     def empty_recycle_bin(self) -> Tuple[bool, str]:
         """Empty the recycle bin"""
         try:
+            logger.debug("Emptying recycle bin...")
             # Use PowerShell to empty recycle bin
             ps_command = 'Clear-RecycleBin -Force -ErrorAction SilentlyContinue'
             result = subprocess.run(
@@ -77,18 +85,23 @@ class CleanupService:
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
             if result.returncode == 0:
+                logger.info("Recycle bin emptied successfully")
                 return True, "Recycle bin emptied successfully"
+            logger.warning("Failed to empty recycle bin")
             return False, "Failed to empty recycle bin"
         except Exception as e:
+            print(f"[ERROR] Empty recycle bin: {e}")
+            logger.error(f"Error emptying recycle bin: {e}", exc_info=True)
             return False, str(e)
     
     def clear_temp_files(self) -> Tuple[bool, str]:
         """
         Clear temporary files from %temp% and C:\Windows\Temp
-        
+
         Returns:
             Tuple of (success, message)
         """
+        logger.debug("Clearing temp files...")
         bytes_freed = 0
         files_deleted = 0
         temp_dirs = [

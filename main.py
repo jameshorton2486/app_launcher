@@ -51,14 +51,22 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     
-    # Log the exception
-    logger.critical(
-        "Uncaught exception",
-        exc_info=(exc_type, exc_value, exc_traceback)
-    )
-    
     # Format error message
     error_msg = str(exc_value) if exc_value else "Unknown error"
+    
+    # Always print to console for visibility
+    print(f"\n[CRITICAL] Uncaught exception: {error_msg}")
+    traceback.print_exception(exc_type, exc_value, exc_traceback)
+    print("Check logs/app.log for full details.\n")
+    
+    # Log the exception
+    try:
+        logger.critical(
+            "Uncaught exception",
+            exc_info=(exc_type, exc_value, exc_traceback)
+        )
+    except Exception as log_err:
+        print(f"[WARNING] Failed to log exception: {log_err}")
     
     # Try to show error dialog
     try:
@@ -75,10 +83,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
             f"Please check logs/app.log for details."
         )
         root.destroy()
-    except Exception:
-        # Fallback to console
-        print(f"\n[ERROR] {error_msg}")
-        print("Check logs/app.log for details.")
+    except Exception as ui_err:
+        print(f"[WARNING] Could not show error dialog: {ui_err}")
 
 
 def check_dependencies():
@@ -87,7 +93,6 @@ def check_dependencies():
     Returns True if all dependencies are available.
     """
     missing = []
-    
     required_packages = [
         ('customtkinter', 'customtkinter'),
         ('PIL', 'Pillow'),
@@ -96,20 +101,25 @@ def check_dependencies():
         ('git', 'GitPython'),
     ]
     
+    logger.debug("Checking dependencies...")
     for import_name, package_name in required_packages:
         try:
             __import__(import_name)
-        except ImportError:
+            logger.debug(f"  OK: {package_name}")
+        except ImportError as e:
             missing.append(package_name)
+            logger.warning(f"  Missing: {package_name} ({e})")
     
     if missing:
-        print("Missing required packages:")
+        print("[ERROR] Missing required packages:")
         for pkg in missing:
             print(f"  - {pkg}")
         print("\nInstall them with:")
         print(f"  pip install {' '.join(missing)}")
+        logger.error(f"Missing dependencies: {missing}")
         return False
     
+    logger.info("All dependencies OK")
     return True
 
 
@@ -162,7 +172,8 @@ def check_single_instance():
         return True
         
     except Exception as e:
-        logger.warning(f"Could not check for existing instance: {e}")
+        print(f"[WARNING] Could not check for existing instance: {e}")
+        logger.warning(f"Could not check for existing instance: {e}", exc_info=True)
         return True  # Allow running anyway
 
 
@@ -218,7 +229,13 @@ def ensure_directories():
     ]
     
     for directory in directories:
-        directory.mkdir(parents=True, exist_ok=True)
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            logger.debug(f"Directory ready: {directory}")
+        except OSError as e:
+            logger.error(f"Failed to create directory {directory}: {e}")
+            print(f"[ERROR] Failed to create {directory}: {e}")
+            raise
 
 
 def reset_configuration():
@@ -248,11 +265,11 @@ def main():
     # Parse arguments first (before logging, so --help works fast)
     args = parse_arguments()
     
-    # Ensure directories exist
-    ensure_directories()
-    
     # Setup logging
     logger = setup_logging()
+
+    # Ensure directories exist
+    ensure_directories()
     
     if args.debug:
         import logging
@@ -286,47 +303,57 @@ def main():
     
     # Import and run the application
     try:
+        print("[INFO] Loading application modules...")
         logger.info("Loading application modules...")
         
         from src.app import AppLauncher
         
-        # Create and run the application
+        print("[INFO] Creating application window...")
         logger.info("Creating application window...")
         app = AppLauncher()
         
         # Start minimized if requested (from command line)
         if args.minimized:
+            print("[INFO] Starting minimized to tray")
             logger.info("Starting minimized as requested (from command line)")
             app._minimized_from_cli = True  # Mark that this was from CLI
             app.after(100, app.withdraw)
         
+        print("[INFO] Application initialized - starting main loop")
         logger.info("Application initialized successfully")
         logger.info("Starting main event loop...")
         
         # Run the application
         app.run()
         
+        print("[INFO] Application closed normally")
         logger.info("Application closed normally")
         return 0
         
     except ImportError as e:
-        logger.error(f"Failed to import application modules: {e}")
+        print(f"[ERROR] Import failed: {e}")
+        logger.error(f"Failed to import application modules: {e}", exc_info=True)
         logger.error("Make sure all source files are present in the src/ directory")
         
         # Show helpful error
-        import tkinter as tk
-        from tkinter import messagebox
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror(
-            "Import Error",
-            f"Failed to load application:\n\n{e}\n\n"
-            f"Please ensure all files are present in the src/ directory."
-        )
-        root.destroy()
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror(
+                "Import Error",
+                f"Failed to load application:\n\n{e}\n\n"
+                f"Please ensure all files are present in the src/ directory."
+            )
+            root.destroy()
+        except Exception as ui_err:
+            print(f"[WARNING] Could not show error dialog: {ui_err}")
         return 1
         
     except Exception as e:
+        print(f"[ERROR] Failed to start application: {e}")
+        traceback.print_exc()
         logger.exception(f"Failed to start application: {e}")
         return 1
 

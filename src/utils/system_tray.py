@@ -35,190 +35,193 @@ _queue_polling_active = False
 def create_tray_icon_image():
     """
     Create tray icon image that works on both light and dark taskbars
-    
+
     Returns:
         PIL Image object
     """
-    # Create a 64x64 image with transparent background
-    image = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    
-    # Draw a rounded rectangle background
-    # Use a color that works on both light and dark backgrounds
-    bg_color = (108, 92, 231, 255)  # Purple color
-    draw.rounded_rectangle([8, 8, 56, 56], radius=8, fill=bg_color)
-    
-    # Draw a simple "L" for Launcher in white
     try:
-        # Try to use a font if available
-        font = ImageFont.truetype("arial.ttf", 32)
-    except:
-        # Fallback to default font
-        font = ImageFont.load_default()
-    
-    # Draw "L" text
-    draw.text((20, 16), 'L', fill='white', font=font)
-    
-    # Convert to RGB for pystray (it doesn't support RGBA well)
-    rgb_image = Image.new('RGB', image.size, (255, 255, 255))
-    rgb_image.paste(image, mask=image.split()[3])  # Use alpha channel as mask
-    
-    return rgb_image
+        image = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+
+        bg_color = (108, 92, 231, 255)
+        draw.rounded_rectangle([8, 8, 56, 56], radius=8, fill=bg_color)
+
+        try:
+            font = ImageFont.truetype("arial.ttf", 32)
+        except (OSError, IOError) as e:
+            logger.debug(f"Using default font (arial not found): {e}")
+            font = ImageFont.load_default()
+
+        draw.text((20, 16), 'L', fill='white', font=font)
+
+        rgb_image = Image.new('RGB', image.size, (255, 255, 255))
+        rgb_image.paste(image, mask=image.split()[3])
+        logger.debug("Tray icon image created")
+        return rgb_image
+    except Exception as e:
+        logger.error(f"Failed to create tray icon image: {e}", exc_info=True)
+        print(f"[ERROR] Tray icon image: {e}")
+        raise
 
 
 def create_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None):
     """
     Create system tray icon with menu
-    
+
     Args:
         app_instance: Main AppLauncher instance
         config_manager: ConfigManager instance
         process_service: ProcessService instance
         cleanup_service: CleanupService instance
         on_settings: Callback for settings menu item
-        
+
     Returns:
         pystray.Icon instance
     """
-    # Create icon image
-    image = create_tray_icon_image()
-    
-    # Get projects for quick launch (all projects, not just favorites)
-    projects = config_manager.load_projects()
-    
-    # Create menu items
-    menu_items = []
+    try:
+        logger.debug("Creating tray icon...")
+        image = create_tray_icon_image()
 
-    tool_registry = ToolRegistry()
-    tool_registry.load_tools(TOOLS_FILE)
+        # Get projects for quick launch (all projects, not just favorites)
+        projects = config_manager.load_projects()
 
-    tool_id_aliases = {
-        "clear_standby_ram": "clear_ram_standby"
-    }
+        # Create menu items
+        menu_items = []
 
-    def get_tool_handler(tool_id: str):
-        resolved_id = tool_id
-        if not tool_registry.get_tool_by_id(resolved_id):
-            resolved_id = tool_id_aliases.get(tool_id, tool_id)
-        if tool_registry.get_tool_by_id(resolved_id):
-            return lambda tid=resolved_id: tool_registry.execute_tool(tid, config_manager)
-        logger.warning(f"Tray tool handler missing for {tool_id}")
-        return lambda: (False, "Tool not configured")
-    
-    # Open App Launcher
-    menu_items.append(
-        pystray.MenuItem(
-            'Open App Launcher',
-            lambda icon, item: show_window(app_instance)
+        tool_registry = ToolRegistry()
+        tool_registry.load_tools(TOOLS_FILE)
+
+        tool_id_aliases = {
+            "clear_standby_ram": "clear_ram_standby"
+        }
+
+        def get_tool_handler(tool_id: str):
+            resolved_id = tool_id
+            if not tool_registry.get_tool_by_id(resolved_id):
+                resolved_id = tool_id_aliases.get(tool_id, tool_id)
+            if tool_registry.get_tool_by_id(resolved_id):
+                return lambda tid=resolved_id: tool_registry.execute_tool(tid, config_manager)
+            logger.warning(f"Tray tool handler missing for {tool_id}")
+            return lambda: (False, "Tool not configured")
+
+        # Open App Launcher
+        menu_items.append(
+            pystray.MenuItem(
+                'Open App Launcher',
+                lambda icon, item: show_window(app_instance)
+            )
         )
-    )
-    menu_items.append(pystray.Menu.SEPARATOR)
-    
-    # Quick Launch submenu
-    if projects:
-        quick_launch_items = []
-        for project in projects[:20]:  # Limit to 20 projects
-            project_name = project.get('name', 'Unnamed')
-            quick_launch_items.append(
-                pystray.MenuItem(
-                    project_name,
-                    lambda icon, item, p=project: launch_project(p, process_service)
+        menu_items.append(pystray.Menu.SEPARATOR)
+
+        # Quick Launch submenu
+        if projects:
+            quick_launch_items = []
+            for project in projects[:20]:  # Limit to 20 projects
+                project_name = project.get('name', 'Unnamed')
+                quick_launch_items.append(
+                    pystray.MenuItem(
+                        project_name,
+                        lambda icon, item, p=project: launch_project(p, process_service)
+                    )
                 )
+            menu_items.append(
+                pystray.MenuItem('Quick Launch', pystray.Menu(*quick_launch_items))
             )
-        menu_items.append(
-            pystray.MenuItem('Quick Launch', pystray.Menu(*quick_launch_items))
-        )
-    else:
-        menu_items.append(
-            pystray.MenuItem('Quick Launch', None, enabled=False)
-        )
-    
-    # Utilities submenu
-    utilities_items = [
-        pystray.MenuItem(
-            'Empty Recycle Bin',
-            lambda icon, item: run_utility(
-                get_tool_handler("empty_recycle_bin"),
-                "Empty Recycle Bin"
-            )
-        ),
-        pystray.MenuItem(
-            'Clear Temp Files',
-            lambda icon, item: run_utility(
-                get_tool_handler("clear_temp_files"),
-                "Clear Temp Files"
-            )
-        ),
-        pystray.MenuItem(
-            'Flush DNS',
-            lambda icon, item: run_utility(
-                get_tool_handler("flush_dns"),
-                "Flush DNS"
-            )
-        ),
-        pystray.MenuItem(
-            'Clear Prefetch',
-            lambda icon, item: run_utility(
-                get_tool_handler("clear_prefetch"),
-                "Clear Prefetch"
-            )
-        ),
-        pystray.MenuItem(
-            'Clear RAM Standby',
-            lambda icon, item: run_utility(
-                get_tool_handler("clear_standby_ram"),
-                "Clear RAM Standby"
-            )
-        ),
-        pystray.MenuItem(
-            'Restart Explorer',
-            lambda icon, item: run_utility(
-                get_tool_handler("restart_explorer"),
-                "Restart Explorer"
-            )
-        ),
-    ]
-    menu_items.append(
-        pystray.MenuItem('Utilities', pystray.Menu(*utilities_items))
-    )
-    
-    menu_items.append(pystray.Menu.SEPARATOR)
-    
-    # Settings - wrap in queue callback for thread safety
-    def settings_handler(icon, item):
-        if on_settings:
-            _queue_callback(on_settings)
         else:
-            show_settings(app_instance)
-    
-    menu_items.append(
-        pystray.MenuItem(
-            'Settings',
-            settings_handler
+            menu_items.append(
+                pystray.MenuItem('Quick Launch', None, enabled=False)
+            )
+
+        # Utilities submenu
+        utilities_items = [
+            pystray.MenuItem(
+                'Empty Recycle Bin',
+                lambda icon, item: run_utility(
+                    get_tool_handler("empty_recycle_bin"),
+                    "Empty Recycle Bin"
+                )
+            ),
+            pystray.MenuItem(
+                'Clear Temp Files',
+                lambda icon, item: run_utility(
+                    get_tool_handler("clear_temp_files"),
+                    "Clear Temp Files"
+                )
+            ),
+            pystray.MenuItem(
+                'Flush DNS',
+                lambda icon, item: run_utility(
+                    get_tool_handler("flush_dns"),
+                    "Flush DNS"
+                )
+            ),
+            pystray.MenuItem(
+                'Clear Prefetch',
+                lambda icon, item: run_utility(
+                    get_tool_handler("clear_prefetch"),
+                    "Clear Prefetch"
+                )
+            ),
+            pystray.MenuItem(
+                'Clear RAM Standby',
+                lambda icon, item: run_utility(
+                    get_tool_handler("clear_standby_ram"),
+                    "Clear RAM Standby"
+                )
+            ),
+            pystray.MenuItem(
+                'Restart Explorer',
+                lambda icon, item: run_utility(
+                    get_tool_handler("restart_explorer"),
+                    "Restart Explorer"
+                )
+            ),
+        ]
+        menu_items.append(
+            pystray.MenuItem('Utilities', pystray.Menu(*utilities_items))
         )
-    )
-    
-    # Exit
-    menu_items.append(
-        pystray.MenuItem(
-            'Exit',
-            lambda icon, item: exit_app(app_instance)
+
+        menu_items.append(pystray.Menu.SEPARATOR)
+
+        # Settings - wrap in queue callback for thread safety
+        def settings_handler(icon, item):
+            if on_settings:
+                _queue_callback(on_settings)
+            else:
+                show_settings(app_instance)
+
+        menu_items.append(
+            pystray.MenuItem(
+                'Settings',
+                settings_handler
+            )
         )
-    )
+
+        # Exit
+        menu_items.append(
+            pystray.MenuItem(
+                'Exit',
+                lambda icon, item: exit_app(app_instance)
+            )
+        )
+
+        # Create menu
+        menu = pystray.Menu(*menu_items)
     
-    # Create menu
-    menu = pystray.Menu(*menu_items)
-    
-    # Create icon with default action (left-click) to show window
-    icon = pystray.Icon(
-        "App Launcher",
-        image,
-        "James's Project Launcher",
-        menu,
-        default_action=lambda icon: show_window(app_instance)
-    )
-    
-    return icon
+        # Create icon with default action (left-click) to show window
+        icon = pystray.Icon(
+            "App Launcher",
+            image,
+            "James's Project Launcher",
+            menu,
+            default_action=lambda icon: show_window(app_instance)
+        )
+        logger.debug("Tray icon created successfully")
+        return icon
+    except Exception as e:
+        logger.error(f"Failed to create tray icon: {e}", exc_info=True)
+        print(f"[ERROR] Create tray icon: {e}")
+        raise
 
 
 def _start_callback_polling(app_instance):
@@ -237,7 +240,8 @@ def _start_callback_polling(app_instance):
                     try:
                         callback()
                     except Exception as e:
-                        logger.debug(f"Error executing tray callback: {e}")
+                        print(f"[WARNING] Tray callback error: {e}")
+                        logger.warning(f"Error executing tray callback: {e}", exc_info=True)
                 except queue.Empty:
                     break
             
@@ -292,29 +296,38 @@ def _show_window_safe(app_instance):
 def launch_project(project, process_service):
     """Launch a project from tray menu"""
     try:
+        name = project.get('name', 'Unknown')
         success, message = process_service.launch_project(project)
         if success:
-            logger.info(f"Launched project: {project.get('name', 'Unknown')}")
+            print(f"[INFO] Launched project: {name}")
+            logger.info(f"Launched project: {name}")
         else:
+            print(f"[WARNING] Failed to launch project: {message}")
             logger.warning(f"Failed to launch project: {message}")
     except Exception as e:
-        logger.error(f"Error launching project: {e}")
+        print(f"[ERROR] Launch project: {e}")
+        logger.error(f"Error launching project: {e}", exc_info=True)
 
 
 def run_utility(utility_func, name):
     """Run a utility function and show notification"""
     try:
+        logger.debug(f"Running utility: {name}")
         result = utility_func()
         if isinstance(result, tuple):
             success, message = result
             if success:
+                print(f"[INFO] Utility OK: {name} - {message}")
                 show_notification("Success", f"{name}: {message}")
             else:
+                print(f"[WARNING] Utility failed: {name} - {message}")
                 show_notification("Error", f"{name}: {message}")
         else:
+            print(f"[INFO] Utility completed: {name}")
             show_notification("Info", f"{name} completed")
     except Exception as e:
-        logger.error(f"Error running utility {name}: {e}")
+        print(f"[ERROR] Utility {name}: {e}")
+        logger.error(f"Error running utility {name}: {e}", exc_info=True)
         show_notification("Error", f"{name} failed: {str(e)}")
 
 
@@ -360,7 +373,8 @@ def _quit_app_safe(app_instance):
             app_instance.quit()
             app_instance.destroy()
     except Exception as e:
-        logger.error(f"Error in _quit_app_safe: {e}")
+        print(f"[ERROR] Quit app: {e}")
+        logger.error(f"Error in _quit_app_safe: {e}", exc_info=True)
 
 
 def show_notification(title, message):
@@ -389,9 +403,12 @@ def show_notification(title, message):
 def run_tray_icon(icon):
     """Run the tray icon in a separate thread"""
     try:
+        logger.debug("Tray icon thread starting")
         icon.run()
+        logger.debug("Tray icon thread exited")
     except Exception as e:
-        logger.error(f"Error running tray icon: {e}")
+        print(f"[ERROR] Tray icon thread: {e}")
+        logger.error(f"Error running tray icon: {e}", exc_info=True)
 
 
 def start_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None):
@@ -442,6 +459,6 @@ def start_tray_icon(app_instance, config_manager, process_service, cleanup_servi
         logger.info("System tray icon started")
         return icon
     except Exception as e:
-        # Don't log as error - tray icon is optional
-        logger.debug(f"Tray icon not available: {e}")
+        print(f"[WARNING] Tray icon not available: {e}")
+        logger.warning(f"Tray icon not available: {e}", exc_info=True)
         return None

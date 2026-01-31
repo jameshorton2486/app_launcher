@@ -57,9 +57,9 @@ def setup_logger(name: str = "AppLauncher", log_file: str = None) -> logging.Log
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
     
-    # Console handler (only warnings and above)
+    # Console handler (INFO and above - visible in terminal)
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.WARNING)
+    console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter('%(levelname)s: %(message)s')
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)

@@ -180,46 +180,54 @@ class AppLauncher(ctk.CTk):
             # Bind close event
             self.protocol("WM_DELETE_WINDOW", self.on_closing)
             
+            print("[INFO] Application initialized successfully")
             logger.info("Application initialized successfully")
         except Exception as e:
+            print(f"[ERROR] Failed to initialize application: {e}")
             logger.error(f"Failed to initialize application: {e}", exc_info=True)
             raise
     
     def setup_window(self):
         """Configure main window with position/size persistence"""
-        width = self.config_manager.get_setting('window.width', 900)
-        height = self.config_manager.get_setting('window.height', 650)
-        
-        self.title("James's Project Launcher (v2.0)")
-        self.minsize(700, 500)
-        
-        # Set window background
-        self.configure(fg_color=COLORS['bg_primary'])
-        
-        # Try to load saved window position
-        saved_x = self.config_manager.get_setting('window.x', None)
-        saved_y = self.config_manager.get_setting('window.y', None)
-        
-        if saved_x is not None and saved_y is not None:
-            # Restore saved position
-            self.geometry(f"{width}x{height}+{saved_x}+{saved_y}")
-            # Verify window is on screen
-            self.update_idletasks()
-            if self._is_window_on_screen():
-                logger.debug(f"Restored window position: {saved_x}, {saved_y}")
+        try:
+            width = self.config_manager.get_setting('window.width', 900)
+            height = self.config_manager.get_setting('window.height', 650)
+            
+            self.title("James's Project Launcher (v2.0)")
+            self.minsize(700, 500)
+            
+            # Set window background
+            self.configure(fg_color=COLORS['bg_primary'])
+            
+            # Try to load saved window position
+            saved_x = self.config_manager.get_setting('window.x', None)
+            saved_y = self.config_manager.get_setting('window.y', None)
+            
+            if saved_x is not None and saved_y is not None:
+                # Restore saved position
+                self.geometry(f"{width}x{height}+{saved_x}+{saved_y}")
+                # Verify window is on screen
+                self.update_idletasks()
+                if self._is_window_on_screen():
+                    logger.debug(f"Restored window position: {saved_x}, {saved_y}")
+                else:
+                    # Position is off-screen, center instead
+                    self.center_window()
             else:
-                # Position is off-screen, center instead
+                # No saved position, center on screen
+                self.geometry(f"{width}x{height}")
                 self.center_window()
-        else:
-            # No saved position, center on screen
-            self.geometry(f"{width}x{height}")
-            self.center_window()
-        
-        # Set window icon if available
-        self._set_window_icon()
-        
-        # Save window position/size on move/resize
-        self.bind('<Configure>', self._on_window_configure)
+            
+            # Set window icon if available
+            self._set_window_icon()
+            
+            # Save window position/size on move/resize
+            self.bind('<Configure>', self._on_window_configure)
+            logger.debug("Window setup complete")
+        except Exception as e:
+            logger.error(f"Error in setup_window: {e}", exc_info=True)
+            print(f"[ERROR] Window setup failed: {e}")
+            raise
     
     def _is_window_on_screen(self) -> bool:
         """Check if window is visible on any screen"""
@@ -233,9 +241,10 @@ class AppLauncher(ctk.CTk):
             screen_height = self.winfo_screenheight()
             
             # Check if any part of window is on screen
-            return (x + width > 0 and x < screen_width and 
-                   y + height > 0 and y < screen_height)
-        except:
+            return (x + width > 0 and x < screen_width and
+                    y + height > 0 and y < screen_height)
+        except Exception as e:
+            logger.debug(f"Could not check window position: {e}")
             return False
     
     def _on_window_configure(self, event=None):
@@ -716,6 +725,7 @@ class AppLauncher(ctk.CTk):
     def setup_system_integration(self):
         """Set up system tray, hotkeys, and startup"""
         try:
+            logger.debug("Setting up system integration...")
             suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
             StartupManager.set_suppress_errors(suppress_warnings)
             # Start system tray icon (delayed to ensure main loop is running)
@@ -758,6 +768,7 @@ class AppLauncher(ctk.CTk):
             if start_minimized and not hasattr(self, '_minimized_from_cli'):
                 self.after(100, self.withdraw)
         except Exception as e:
+            print(f"[ERROR] System integration failed: {e}")
             logger.error(f"Error in system integration: {e}", exc_info=True)
 
     
@@ -859,41 +870,54 @@ class AppLauncher(ctk.CTk):
     
     def quit_app(self):
         """Quit the application completely"""
+        print("[INFO] Shutting down application...")
+        logger.info("Shutting down application...")
         self._is_shutting_down = True
+        
         # Stop git status monitoring if active
         try:
             if self.projects_tab and hasattr(self.projects_tab, 'git_service'):
                 self.projects_tab.git_service.stop_status_monitoring()
+                logger.debug("Git monitoring stopped")
         except Exception as e:
-            logger.debug(f"Error stopping git monitoring: {e}")
+            logger.warning(f"Error stopping git monitoring: {e}")
+            print(f"[WARNING] Git monitoring: {e}")
 
         # Stop tray icon first
         if self.tray_icon:
             try:
                 self.tray_icon.stop()
-                # Give it a moment to stop
                 import time
                 time.sleep(0.1)
+                logger.debug("Tray icon stopped")
             except Exception as e:
-                logger.debug(f"Error stopping tray icon: {e}")
+                logger.warning(f"Error stopping tray icon: {e}")
+                print(f"[WARNING] Tray icon stop: {e}")
         
         # Shutdown config manager
         try:
             self.config_manager.shutdown()
+            logger.debug("Config manager shutdown complete")
         except Exception as e:
-            logger.debug(f"Error shutting down config manager: {e}")
+            logger.warning(f"Error shutting down config manager: {e}")
+            print(f"[WARNING] Config shutdown: {e}")
         
         # Unregister hotkey
         try:
             self.hotkey_manager.cleanup()
+            logger.debug("Hotkey manager cleaned up")
         except Exception as e:
-            logger.debug(f"Error cleaning up hotkey manager: {e}")
+            logger.warning(f"Error cleaning up hotkey manager: {e}")
+            print(f"[WARNING] Hotkey cleanup: {e}")
         
         # Destroy window
         try:
             self.destroy()
+            print("[INFO] Application shutdown complete")
+            logger.info("Application shutdown complete")
         except Exception as e:
-            logger.debug(f"Error destroying window: {e}")
+            logger.error(f"Error destroying window: {e}")
+            print(f"[ERROR] Window destroy: {e}")
 
     def _build_menu(self):
         try:
@@ -908,6 +932,7 @@ class AppLauncher(ctk.CTk):
     def _start_tray_icon_delayed(self):
         """Start tray icon after main loop is running"""
         try:
+            logger.debug("Starting tray icon...")
             suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
             self.tray_icon = start_tray_icon(
                 self,
@@ -917,18 +942,20 @@ class AppLauncher(ctk.CTk):
                 on_settings=self.open_settings
             )
             if self.tray_icon:
+                print("[INFO] System tray icon started")
                 logger.info("System tray icon started")
             else:
                 if suppress_warnings:
                     logger.debug("Tray icon not available")
                 else:
+                    print("[WARNING] Failed to start tray icon")
                     logger.warning("Failed to start tray icon")
         except Exception as e:
             suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
-            if suppress_warnings:
-                logger.debug(f"Tray icon suppressed: {e}")
-            else:
-                logger.warning(f"Failed to start tray icon: {e}")
+            print(f"[WARNING] Tray icon error: {e}")
+            logger.warning(f"Failed to start tray icon: {e}", exc_info=True)
+            if not suppress_warnings:
+                logger.warning(f"Tray icon suppressed: {e}")
     
     def _handle_health_update(self, result: dict):
         attention = result.get("attention_count", 0)

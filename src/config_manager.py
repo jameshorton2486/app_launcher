@@ -46,17 +46,24 @@ class ConfigManager:
     """Manages application configuration files"""
     
     def __init__(self):
-        self.config_dir = CONFIG_DIR
-        ensure_dir(self.config_dir)
-        
-        self.settings = {}
-        self.projects = []
-        self.file_patterns = {}
-        self.tools = {}
-        
-        self.observers = []
-        self._load_all()
-        self._setup_watchers()
+        try:
+            logger.debug("Initializing ConfigManager...")
+            self.config_dir = CONFIG_DIR
+            ensure_dir(self.config_dir)
+            
+            self.settings = {}
+            self.projects = []
+            self.file_patterns = {}
+            self.tools = {}
+            
+            self.observers = []
+            self._load_all()
+            self._setup_watchers()
+            logger.info("ConfigManager initialized")
+        except Exception as e:
+            print(f"[ERROR] ConfigManager init failed: {e}")
+            logger.error(f"ConfigManager init failed: {e}", exc_info=True)
+            raise
     
     def _load_all(self):
         """Load all configuration files"""
@@ -67,26 +74,34 @@ class ConfigManager:
     
     def _setup_watchers(self):
         """Set up file watchers for config changes"""
-        observer = Observer()
-        
-        # Watch config directory
-        handler = ConfigFileHandler(self._on_config_changed)
-        observer.schedule(handler, self.config_dir, recursive=False)
-        observer.start()
-        
-        self.observers.append(observer)
+        try:
+            observer = Observer()
+            
+            # Watch config directory
+            handler = ConfigFileHandler(self._on_config_changed)
+            observer.schedule(handler, self.config_dir, recursive=False)
+            observer.start()
+            
+            self.observers.append(observer)
+            logger.debug("Config file watchers started")
+        except Exception as e:
+            logger.warning(f"Could not start config watchers: {e}")
+            print(f"[WARNING] Config watchers: {e}")
     
     def _on_config_changed(self, file_path):
         """Handle external config file changes"""
-        # Reload the changed file
-        if file_path.endswith('settings.json'):
-            self.settings = self.load_settings()
-        elif file_path.endswith('projects.json'):
-            self.projects = self.load_projects()
-        elif file_path.endswith('file_patterns.json'):
-            self.file_patterns = self.load_file_patterns()
-        elif file_path.endswith('tools.json'):
-            self.tools = self.load_tools()
+        try:
+            logger.debug(f"Config file changed: {file_path}")
+            if file_path.endswith('settings.json'):
+                self.settings = self.load_settings()
+            elif file_path.endswith('projects.json'):
+                self.projects = self.load_projects()
+            elif file_path.endswith('file_patterns.json'):
+                self.file_patterns = self.load_file_patterns()
+            elif file_path.endswith('tools.json'):
+                self.tools = self.load_tools()
+        except Exception as e:
+            logger.warning(f"Error reloading config {file_path}: {e}")
     
     def load_json(self, file_path: str, default: Any = None) -> Any:
         """
@@ -112,13 +127,16 @@ class ConfigManager:
                 logger.debug(f"Successfully loaded config: {file_path}")
                 return data
         except json.JSONDecodeError as e:
+            print(f"[ERROR] Invalid JSON in {file_path}: {e}")
             logger.error(f"Invalid JSON in {file_path}: {e}")
             logger.warning(f"Using default values for {file_path}")
             return default
         except IOError as e:
+            print(f"[ERROR] IO error loading {file_path}: {e}")
             logger.error(f"IO error loading {file_path}: {e}")
             return default
         except Exception as e:
+            print(f"[ERROR] Unexpected error loading {file_path}: {e}")
             logger.error(f"Unexpected error loading {file_path}: {e}", exc_info=True)
             return default
     
@@ -136,9 +154,11 @@ class ConfigManager:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             logger.debug(f"Successfully saved config: {file_path}")
         except IOError as e:
+            print(f"[ERROR] IO error saving {file_path}: {e}")
             logger.error(f"IO error saving {file_path}: {e}")
             raise
         except Exception as e:
+            print(f"[ERROR] Unexpected error saving {file_path}: {e}")
             logger.error(f"Unexpected error saving {file_path}: {e}", exc_info=True)
             raise
     
@@ -634,9 +654,12 @@ class ConfigManager:
     def shutdown(self):
         """Stop file watchers"""
         logger.info("Shutting down config manager")
+        print("[INFO] Config manager shutdown...")
         for observer in self.observers:
             try:
                 observer.stop()
                 observer.join(timeout=1.0)
+                logger.debug("Config watcher stopped")
             except Exception as e:
                 logger.warning(f"Error stopping file watcher: {e}")
+                print(f"[WARNING] Config watcher stop: {e}")
