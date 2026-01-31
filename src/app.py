@@ -408,14 +408,28 @@ class AppLauncher(ctk.CTk):
         footer_frame = ctk.CTkFrame(self.sidebar, fg_color=COLORS['bg_primary'], corner_radius=0)
         footer_frame.pack(fill='x', side='bottom', padx=12, pady=12)
 
+        footer_top = ctk.CTkFrame(footer_frame, fg_color='transparent')
+        footer_top.pack(fill='x')
+
         self.ram_label = ctk.CTkLabel(
-            footer_frame,
+            footer_top,
             text="RAM: --%",
             font=('Segoe UI', 10),
             text_color=COLORS['text_secondary'],
             anchor='w'
         )
-        self.ram_label.pack(fill='x')
+        self.ram_label.pack(side='left', fill='x', expand=True)
+
+        shortcuts_btn = ctk.CTkButton(
+            footer_top,
+            text="?",
+            width=28,
+            height=24,
+            fg_color=COLORS['bg_secondary'],
+            hover_color=COLORS['bg_hover'],
+            command=self.show_shortcuts_help
+        )
+        shortcuts_btn.pack(side='right')
 
         self.version_label = ctk.CTkLabel(
             footer_frame,
