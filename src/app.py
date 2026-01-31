@@ -9,6 +9,7 @@ import os
 import threading
 import psutil
 import tkinter as tk
+from datetime import datetime
 
 # Add parent directory to path for imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -333,7 +334,8 @@ class AppLauncher(ctk.CTk):
         self.status_bar = StatusBar(
             self.content_container,
             on_settings_click=self.open_settings,
-            on_help_click=self.show_shortcuts_help
+            on_help_click=self.show_shortcuts_help,
+            on_screenshot_click=self.capture_screenshot
         )
         self.status_bar.pack(fill='x', side='bottom', padx=0, pady=0)
 
@@ -358,6 +360,7 @@ class AppLauncher(ctk.CTk):
         self.bind_all("<Control-5>", lambda e: self.show_view("Settings"))
         self.bind_all("<Control-f>", lambda e: self.focus_search())
         self.bind_all("<Control-r>", lambda e: self.refresh_current_view())
+        self.bind_all("<Control-Shift-s>", lambda e: self.capture_screenshot())
         self.bind_all("<F5>", lambda e: self.refresh_dashboard())
         self.bind_all("<F1>", lambda e: self.open_help_manual())
         self.bind_all("<Escape>", lambda e: self.handle_escape())
@@ -575,6 +578,43 @@ class AppLauncher(ctk.CTk):
             logger.error(f"Error opening settings: {e}", exc_info=True)
             self.status_bar.set_status("Error opening settings")
 
+    def capture_screenshot(self):
+        """Capture entire screen to file"""
+        try:
+            from PIL import ImageGrab
+            
+            # Get screenshots folder from settings
+            screenshots_folder = self.config_manager.get_setting(
+                'paths.screenshots_folder',
+                os.path.join(os.path.expanduser('~'), 'Documents', 'Screenshots')
+            )
+            os.makedirs(screenshots_folder, exist_ok=True)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"app_launcher_{timestamp}.png"
+            filepath = os.path.join(screenshots_folder, filename)
+            
+            # Capture full screen
+            screenshot = ImageGrab.grab()
+            screenshot.save(filepath)
+            
+            logger.info(f"Screenshot saved: {filepath}")
+            self.status_bar.set_status(f"Screenshot saved: {filename}")
+            if ToastManager:
+                ToastManager.show_success("Screenshot", f"Saved to {filename}")
+        except ImportError as e:
+            msg = "Pillow required for screenshots (pip install Pillow)"
+            logger.error(msg)
+            self.status_bar.set_status("Screenshot failed")
+            if ToastManager:
+                ToastManager.show_error("Screenshot", msg)
+        except Exception as e:
+            logger.error(f"Screenshot failed: {e}", exc_info=True)
+            self.status_bar.set_status("Screenshot failed")
+            if ToastManager:
+                ToastManager.show_error("Screenshot", str(e))
+
     def open_command_palette(self):
         """Open command palette modal"""
         try:
@@ -617,7 +657,8 @@ class AppLauncher(ctk.CTk):
             "Actions\n"
             "Ctrl+R       Refresh\n"
             "F5           Refresh Dashboard\n"
-            "Ctrl+F       Focus search\n\n"
+            "Ctrl+F       Focus search\n"
+            "Ctrl+Shift+S Capture screenshot\n\n"
             "Global\n"
             "Win+Shift+L  Show/Hide app"
         )

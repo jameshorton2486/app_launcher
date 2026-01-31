@@ -28,13 +28,15 @@ from src.theme import COLORS
 class StatusBar(ctk.CTkFrame):
     """Status bar component at bottom of window"""
     
-    def __init__(self, parent, on_settings_click=None, on_help_click=None):
+    def __init__(self, parent, on_settings_click=None, on_help_click=None, on_screenshot_click=None):
         """
         Initialize status bar
-        
+
         Args:
             parent: Parent widget
             on_settings_click: Optional callback for settings button click
+            on_help_click: Optional callback for help button click
+            on_screenshot_click: Optional callback for screenshot button click
         """
         super().__init__(parent, fg_color=COLORS['bg_secondary'], corner_radius=0, height=30)
         
@@ -43,6 +45,7 @@ class StatusBar(ctk.CTkFrame):
         self.system_info = ""
         self.on_settings_click = on_settings_click
         self.on_help_click = on_help_click
+        self.on_screenshot_click = on_screenshot_click
         
         self.setup_ui()
     
@@ -76,6 +79,22 @@ class StatusBar(ctk.CTkFrame):
         separator2 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
         separator2.pack(side='left', fill='y', padx=5, pady=5)
         
+        # Right: Screenshot button (capture full screen)
+        if self.on_screenshot_click:
+            self.screenshot_btn = ctk.CTkButton(
+                self,
+                text="📷",
+                width=30,
+                height=25,
+                font=('Segoe UI', 12),
+                fg_color='transparent',
+                hover_color=COLORS['bg_tertiary'],
+                command=self._on_screenshot_click
+            )
+            self.screenshot_btn.pack(side='right', padx=(5, 0), pady=2)
+            separator_screenshot = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
+            separator_screenshot.pack(side='right', fill='y', padx=5, pady=5)
+
         # Right: Help button
         self.help_btn = ctk.CTkButton(
             self,
@@ -139,6 +158,11 @@ class StatusBar(ctk.CTkFrame):
     def _on_help_click(self):
         if self.on_help_click:
             self.on_help_click()
+
+    def _on_screenshot_click(self):
+        """Handle screenshot button click"""
+        if self.on_screenshot_click:
+            self.on_screenshot_click()
     
     def set_status(self, text: str):
         """Set main status text"""
