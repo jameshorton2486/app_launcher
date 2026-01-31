@@ -718,21 +718,9 @@ class AppLauncher(ctk.CTk):
         try:
             suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
             StartupManager.set_suppress_errors(suppress_warnings)
-            # Start system tray icon
-            try:
-                self.tray_icon = start_tray_icon(
-                    self,
-                    self.config_manager,
-                    self.process_service,
-                    self.cleanup_service,
-                    on_settings=self.open_settings
-                )
-                logger.info("System tray icon started")
-            except Exception as e:
-                if suppress_warnings:
-                    logger.debug(f"Tray icon suppressed: {e}")
-                else:
-                    logger.warning(f"Failed to start tray icon: {e}")
+            # Start system tray icon (delayed to ensure main loop is running)
+            # Schedule tray icon start after main loop begins
+            self.after(500, self._start_tray_icon_delayed)
             
             # Register global hotkey
             try:
@@ -917,6 +905,31 @@ class AppLauncher(ctk.CTk):
         except Exception as exc:
             logger.debug(f"Menu setup failed: {exc}")
 
+    def _start_tray_icon_delayed(self):
+        """Start tray icon after main loop is running"""
+        try:
+            suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
+            self.tray_icon = start_tray_icon(
+                self,
+                self.config_manager,
+                self.process_service,
+                self.cleanup_service,
+                on_settings=self.open_settings
+            )
+            if self.tray_icon:
+                logger.info("System tray icon started")
+            else:
+                if suppress_warnings:
+                    logger.debug("Tray icon not available")
+                else:
+                    logger.warning("Failed to start tray icon")
+        except Exception as e:
+            suppress_warnings = self.config_manager.get_setting('ui.suppress_startup_warnings', True)
+            if suppress_warnings:
+                logger.debug(f"Tray icon suppressed: {e}")
+            else:
+                logger.warning(f"Failed to start tray icon: {e}")
+    
     def _handle_health_update(self, result: dict):
         attention = result.get("attention_count", 0)
         level = "green"

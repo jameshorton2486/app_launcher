@@ -21,7 +21,7 @@ from src.theme import COLORS
 class UtilityButton(ctk.CTkFrame):
     """Button component for utilities with visual feedback and loading spinner"""
     
-    def __init__(self, parent, icon: str, title: str, subtitle: str = "", command=None, tooltip: str = "", width=80, height=80):
+    def __init__(self, parent, icon: str, title: str, subtitle: str = "", command=None, tooltip: str = "", width=80, height=80, requires_admin=False, accent_color=None):
         """
         Initialize utility button
         
@@ -34,13 +34,15 @@ class UtilityButton(ctk.CTkFrame):
             tooltip: Tooltip description
             width: Button width (default 80)
             height: Button height (default 80)
+            requires_admin: Whether tool requires admin privileges
+            accent_color: Accent color for this button (category color)
         """
         super().__init__(
             parent,
-            fg_color=COLORS['bg_secondary'],
-            corner_radius=8,
-            border_width=1,
-            border_color=COLORS['border'],
+            fg_color=COLORS['bg_tertiary'],
+            corner_radius=14,
+            border_width=2,
+            border_color=COLORS['border_subtle'],
             width=width,
             height=height
         )
@@ -51,6 +53,8 @@ class UtilityButton(ctk.CTkFrame):
         self.command = command
         self.tooltip = tooltip
         self.is_running = False
+        self.requires_admin = requires_admin
+        self.accent_color = accent_color or COLORS['accent_primary']
         
         self.setup_ui()
         
@@ -60,16 +64,27 @@ class UtilityButton(ctk.CTkFrame):
     
     def setup_ui(self):
         """Set up the button UI"""
+        # Admin badge container (positioned absolutely)
+        if self.requires_admin:
+            self.admin_badge = ctk.CTkLabel(
+                self,
+                text="🔒",
+                font=('Segoe UI', 14),
+                text_color=COLORS['warning'],
+                fg_color='transparent'
+            )
+            self.admin_badge.place(relx=0.85, rely=0.1, anchor='ne')
+        
         # Icon/Spinner container
         self.icon_frame = ctk.CTkFrame(self, fg_color='transparent')
-        self.icon_frame.pack(pady=(8, 2))
+        self.icon_frame.pack(pady=(10, 4))
         
-        # Icon label
+        # Icon label with accent color
         self.icon_label = ctk.CTkLabel(
             self.icon_frame,
             text=self.icon,
-            font=('Segoe UI', 24),
-            text_color=COLORS['text_primary']
+            font=('Segoe UI', 36),  # Larger, more attractive icons
+            text_color=self.accent_color
         )
         self.icon_label.pack()
         
@@ -172,14 +187,20 @@ class UtilityButton(ctk.CTkFrame):
     def on_enter(self, event=None):
         """Handle mouse enter"""
         if not self.is_running:
-            self.configure(border_color=COLORS['accent_primary'])
-            self.configure(fg_color=COLORS['bg_tertiary'])
+            self.configure(border_color=self.accent_color)
+            self.configure(fg_color=COLORS['bg_hover'])
+            # Elevate slightly on hover
+            self.configure(corner_radius=16)
+            # Brighten icon on hover
+            self.icon_label.configure(text_color=self.accent_color)
     
     def on_leave(self, event=None):
         """Handle mouse leave"""
         if not self.is_running:
-            self.configure(border_color=COLORS['border'])
-            self.configure(fg_color=COLORS['bg_secondary'])
+            self.configure(border_color=COLORS['border_subtle'])
+            self.configure(fg_color=COLORS['bg_tertiary'])
+            self.configure(corner_radius=14)
+            self.icon_label.configure(text_color=self.accent_color)
     
     def on_click(self, event=None):
         """Handle button click"""
@@ -289,8 +310,9 @@ class UtilityButton(ctk.CTkFrame):
         self.error_label.pack_forget()
         self.icon_label.pack()
         
-        self.configure(border_color=COLORS['border'])
-        self.configure(fg_color=COLORS['bg_secondary'])
+        self.configure(border_color=COLORS['border_subtle'])
+        self.configure(fg_color=COLORS['bg_tertiary'])
+        self.configure(corner_radius=12)
         
         if hasattr(self, '_spinner_index'):
             delattr(self, '_spinner_index')

@@ -6,6 +6,7 @@ Handles system tray icon and menu using pystray
 import pystray
 from PIL import Image, ImageDraw, ImageFont
 import threading
+import queue
 import sys
 import os
 
@@ -25,6 +26,10 @@ except ImportError:
     import logging
     logger = logging.getLogger(__name__)
     logger.addHandler(logging.NullHandler())
+
+# Thread-safe callback queue for Tkinter
+_callback_queue = queue.Queue()
+_queue_polling_active = False
 
 
 def create_tray_icon_image():
@@ -179,12 +184,17 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
     
     menu_items.append(pystray.Menu.SEPARATOR)
     
-    # Settings
-    settings_callback = on_settings if on_settings else lambda: show_settings(app_instance)
+    # Settings - wrap in queue callback for thread safety
+    def settings_handler(icon, item):
+        if on_settings:
+            _queue_callback(on_settings)
+        else:
+            show_settings(app_instance)
+    
     menu_items.append(
         pystray.MenuItem(
             'Settings',
-            lambda icon, item: settings_callback()
+            settings_handler
         )
     )
     
@@ -211,24 +221,72 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
     return icon
 
 
+def _start_callback_polling(app_instance):
+    """Start polling the callback queue on the main thread"""
+    global _queue_polling_active
+    if _queue_polling_active:
+        return
+    _queue_polling_active = True
+    
+    def poll_queue():
+        try:
+            # Process all pending callbacks
+            while True:
+                try:
+                    callback = _callback_queue.get_nowait()
+                    try:
+                        callback()
+                    except Exception as e:
+                        logger.debug(f"Error executing tray callback: {e}")
+                except queue.Empty:
+                    break
+            
+            # Continue polling if app still exists
+            if app_instance and hasattr(app_instance, 'winfo_exists'):
+                try:
+                    if app_instance.winfo_exists():
+                        app_instance.after(100, poll_queue)
+                    else:
+                        global _queue_polling_active
+                        _queue_polling_active = False
+                except Exception:
+                    _queue_polling_active = False
+        except Exception as e:
+            logger.debug(f"Queue polling error: {e}")
+            _queue_polling_active = False
+    
+    # Start polling
+    try:
+        app_instance.after(100, poll_queue)
+    except Exception as e:
+        logger.debug(f"Failed to start queue polling: {e}")
+        _queue_polling_active = False
+
+
+def _queue_callback(callback):
+    """Queue a callback to be executed on the main thread"""
+    _callback_queue.put(callback)
+
+
 def show_window(app_instance):
     """Show and restore the main window"""
     if app_instance:
-        try:
-            app_instance.after(0, lambda: _show_window_safe(app_instance))
-        except Exception as e:
-            logger.error(f"Error showing window: {e}")
+        # Queue the callback to run on main thread
+        _queue_callback(lambda: _show_window_safe(app_instance))
 
 
 def _show_window_safe(app_instance):
-    """Thread-safe window show operation"""
+    """Thread-safe window show operation - must be called from main thread"""
     try:
-        app_instance.deiconify()
-        app_instance.lift()
-        app_instance.focus_force()
-        app_instance.update()
+        if app_instance and hasattr(app_instance, 'winfo_exists'):
+            if app_instance.winfo_exists():
+                app_instance.deiconify()
+                app_instance.lift()
+                app_instance.focus_force()
+                app_instance.update()
     except Exception as e:
-        logger.error(f"Error in _show_window_safe: {e}")
+        # Suppress errors if window is being destroyed or not ready
+        logger.debug(f"Error in _show_window_safe (may be normal): {e}")
 
 
 def launch_project(project, process_service):
@@ -262,23 +320,35 @@ def run_utility(utility_func, name):
 
 def show_settings(app_instance):
     """Show settings"""
-    show_window(app_instance)
-    if hasattr(app_instance, 'open_settings'):
-        app_instance.after(0, app_instance.open_settings)
+    def _show_settings():
+        _show_window_safe(app_instance)
+        if hasattr(app_instance, 'open_settings'):
+            try:
+                app_instance.open_settings()
+            except Exception as e:
+                logger.debug(f"Error opening settings: {e}")
+    
+    _queue_callback(_show_settings)
 
 
 def exit_app(app_instance):
     """Exit the application"""
-    if app_instance:
-        try:
-            # Stop the tray icon first
-            if hasattr(app_instance, 'tray_icon') and app_instance.tray_icon:
-                app_instance.tray_icon.stop()
-            
-            # Then quit the app
-            app_instance.after(0, lambda: _quit_app_safe(app_instance))
-        except Exception as e:
-            logger.error(f"Error exiting app: {e}")
+    def _exit():
+        if app_instance:
+            try:
+                # Stop the tray icon first
+                if hasattr(app_instance, 'tray_icon') and app_instance.tray_icon:
+                    try:
+                        app_instance.tray_icon.stop()
+                    except:
+                        pass
+                
+                # Then quit the app
+                _quit_app_safe(app_instance)
+            except Exception as e:
+                logger.debug(f"Error exiting app (may be normal): {e}")
+    
+    _queue_callback(_exit)
 
 
 def _quit_app_safe(app_instance):
@@ -336,9 +406,17 @@ def start_tray_icon(app_instance, config_manager, process_service, cleanup_servi
         on_settings: Callback for settings menu item
         
     Returns:
-        pystray.Icon instance
+        pystray.Icon instance or None if failed
     """
     try:
+        # Check if main loop is running
+        if not app_instance or not hasattr(app_instance, 'winfo_exists'):
+            logger.debug("Cannot start tray icon: app not ready")
+            return None
+        
+        # Start the callback queue polling on the main thread
+        _start_callback_polling(app_instance)
+        
         icon = create_tray_icon(
             app_instance,
             config_manager,
@@ -352,12 +430,18 @@ def start_tray_icon(app_instance, config_manager, process_service, cleanup_servi
         tray_thread = threading.Thread(
             target=run_tray_icon,
             args=(icon,),
-            daemon=True  # Daemon thread so it exits when main thread exits
+            daemon=True,  # Daemon thread so it exits when main thread exits
+            name="TrayIconThread"
         )
         tray_thread.start()
+        
+        # Give it a moment to start
+        import time
+        time.sleep(0.1)
         
         logger.info("System tray icon started")
         return icon
     except Exception as e:
-        logger.error(f"Failed to start tray icon: {e}")
+        # Don't log as error - tray icon is optional
+        logger.debug(f"Tray icon not available: {e}")
         return None

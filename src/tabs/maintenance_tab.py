@@ -33,31 +33,60 @@ except ImportError:
 
 
 class CollapsibleSection(ctk.CTkFrame):
-    """Collapsible section container for tool groups."""
+    """Collapsible section container for tool groups with enhanced styling."""
 
-    def __init__(self, parent, title: str, description: str = "", icon: str = "", collapsed: bool = False):
+    def __init__(self, parent, title: str, description: str = "", icon: str = "", collapsed: bool = False, section_id: str = ""):
         super().__init__(
             parent,
-            fg_color=COLORS['bg_secondary'],
-            corner_radius=16,
-            border_width=1,
-            border_color=COLORS['border_subtle']
+            fg_color='transparent',
+            corner_radius=0
         )
+        self._section_id = section_id
 
         self._collapsed = collapsed
         self._arrow_text = ctk.StringVar(value="▸" if collapsed else "▾")
 
-        header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=24, pady=(20, 6))
+        # Get category color
+        category_colors = {
+            "quick_cleanup": COLORS.get("color_cleanup", COLORS['success']),
+            "memory_disk": COLORS.get("color_memory", COLORS['info']),
+            "network": COLORS.get("color_network", COLORS['accent_primary']),
+            "system_repair": COLORS.get("color_repair", COLORS['warning']),
+            "privacy": COLORS.get("color_privacy", "#ec4899"),
+            "security": COLORS.get("color_security", COLORS['error']),
+            "external_tools": COLORS.get("color_external", "#06b6d4"),
+        }
+        section_id = getattr(self, '_section_id', '')
+        section_color = category_colors.get(section_id, COLORS['accent_primary'])
+        
+        # Enhanced header with colored accent
+        header = ctk.CTkFrame(
+            self,
+            fg_color=COLORS['bg_tertiary'],
+            corner_radius=14,
+            border_width=2,
+            border_color=section_color
+        )
+        header.pack(fill='x', padx=20, pady=(16, 12))
+
+        # Icon with larger size
+        icon_label = ctk.CTkLabel(
+            header,
+            text=icon or "⚙️",
+            font=('Segoe UI', 28),
+            text_color=section_color,
+            anchor='w'
+        )
+        icon_label.pack(side='left', padx=(20, 12), pady=16)
 
         title_label = ctk.CTkLabel(
             header,
-            text=f"{icon} {title}".strip(),
-            font=('Segoe UI', 18, 'bold'),
+            text=title,
+            font=('Segoe UI', 20, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         )
-        title_label.pack(side='left', fill='x', expand=True)
+        title_label.pack(side='left', fill='x', expand=True, pady=16)
 
         arrow = ctk.CTkLabel(
             header,
@@ -67,16 +96,17 @@ class CollapsibleSection(ctk.CTkFrame):
         )
         arrow.pack(side='right')
 
-        description_label = ctk.CTkLabel(
-            self,
-            text=description or "",
-            font=('Segoe UI', 12),
-            text_color=COLORS['text_secondary'],
-            anchor='w',
-            wraplength=900,
-            justify='left'
-        )
-        description_label.pack(fill='x', padx=24, pady=(0, 12))
+        if description:
+            description_label = ctk.CTkLabel(
+                self,
+                text=description,
+                font=('Segoe UI', 13),
+                text_color=COLORS['text_secondary'],
+                anchor='w',
+                wraplength=900,
+                justify='left'
+            )
+            description_label.pack(fill='x', padx=20, pady=(0, 16))
 
         self.content = ctk.CTkFrame(self, fg_color='transparent')
         self.content.pack(fill='both', expand=True, padx=24, pady=(0, 20))
@@ -114,19 +144,77 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         self.setup_ui()
 
     def setup_ui(self):
+        # Enhanced header with gradient effect
         header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=40, pady=(20, 0))
+        header.pack(fill='x', padx=40, pady=(32, 20))
+
+        # Title section
+        title_frame = ctk.CTkFrame(header, fg_color='transparent')
+        title_frame.pack(fill='x', pady=(0, 16))
+
+        # Title with gradient effect using multiple colors
+        title_frame_inner = ctk.CTkFrame(title_frame, fg_color='transparent')
+        title_frame_inner.pack(side='left', fill='x', expand=True)
+        
+        icon_label = ctk.CTkLabel(
+            title_frame_inner,
+            text="🛠️",
+            font=('Segoe UI', 32),
+            text_color=COLORS['accent_primary'],
+            anchor='w'
+        )
+        icon_label.pack(side='left', padx=(0, 12))
+        
+        title = ctk.CTkLabel(
+            title_frame_inner,
+            text="System Maintenance",
+            font=('Segoe UI', 32, 'bold'),
+            text_color=COLORS['text_primary'],
+            anchor='w'
+        )
+        title.pack(side='left')
+
+        subtitle = ctk.CTkLabel(
+            title_frame,
+            text="Keep your system running smoothly with powerful maintenance tools",
+            font=('Segoe UI', 13),
+            text_color=COLORS['text_secondary'],
+            anchor='w'
+        )
+        subtitle.pack(fill='x', pady=(8, 0))
+
+        # Action buttons row
+        actions_frame = ctk.CTkFrame(header, fg_color='transparent')
+        actions_frame.pack(fill='x', pady=(12, 0))
 
         quick_cleanup = ctk.CTkButton(
-            header,
+            actions_frame,
             text="🚀 Run Quick Cleanup",
-            width=220,
-            height=36,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            width=240,
+            height=44,
+            fg_color=COLORS.get("color_cleanup", COLORS['success']),
+            hover_color="#059669",
+            font=('Segoe UI', 14, 'bold'),
+            corner_radius=12,
+            border_width=0,
             command=self._run_quick_cleanup
         )
-        quick_cleanup.pack(anchor='w')
+        quick_cleanup.pack(side='left', padx=(0, 12))
+        
+        # Add info button with different color
+        info_btn = ctk.CTkButton(
+            actions_frame,
+            text="ℹ️ Help",
+            width=120,
+            height=44,
+            fg_color=COLORS['info'],
+            hover_color="#2563eb",
+            font=('Segoe UI', 13, 'bold'),
+            corner_radius=12,
+            border_width=0,
+            command=lambda: self._show_help()
+        )
+        info_btn.pack(side='left')
 
         sections = self.tool_registry.get_sections_by_tab("maintenance")
 
@@ -142,16 +230,38 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             return
 
         for section in sections:
-            card = ctk.CTkFrame(self, fg_color=COLORS['border_default'], corner_radius=16)
-            card.pack(fill='x', padx=40, pady=12)
+            # Enhanced card with shadow effect
+            card_container = ctk.CTkFrame(self, fg_color='transparent')
+            card_container.pack(fill='x', padx=40, pady=16)
+            
+            # Shadow layer
+            shadow = ctk.CTkFrame(
+                card_container,
+                fg_color=COLORS['bg_base'],
+                corner_radius=20
+            )
+            shadow.pack(fill='both', expand=True, padx=(0, 0), pady=(0, 0))
+            
+            # Main card
+            card = ctk.CTkFrame(
+                shadow,
+                fg_color=COLORS['bg_secondary'],
+                corner_radius=18,
+                border_width=1,
+                border_color=COLORS['border_subtle']
+            )
+            card.pack(fill='both', expand=True, padx=2, pady=2)
 
             section_frame = CollapsibleSection(
                 card,
                 title=section.get("title", ""),
                 description=section.get("description", ""),
                 icon=section.get("icon", ""),
-                collapsed=False
+                collapsed=False,
+                section_id=section.get("id", "")
             )
+            section_frame._section_id = section.get("id", "")
+            section_frame.content._section_id = section.get("id", "")
             section_frame.pack(fill='both', expand=True, padx=0, pady=(0, 2))
 
             self._build_tools(section_frame.content, section.get("tools", []))
@@ -160,18 +270,38 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         if not tools:
             return
 
+        # Enhanced grid with better spacing
         grid = ctk.CTkFrame(parent, fg_color='transparent')
-        grid.pack(fill='both', expand=True)
+        grid.pack(fill='both', expand=True, padx=20, pady=(0, 20))
 
         columns = 5
         for col in range(columns):
-            grid.grid_columnconfigure(col, weight=1)
+            grid.grid_columnconfigure(col, weight=1, uniform="tool_col")
+
+        # Category color mapping
+        category_colors = {
+            "quick_cleanup": COLORS.get("color_cleanup", COLORS['success']),
+            "memory_disk": COLORS.get("color_memory", COLORS['info']),
+            "network": COLORS.get("color_network", COLORS['accent_primary']),
+            "system_repair": COLORS.get("color_repair", COLORS['warning']),
+            "privacy": COLORS.get("color_privacy", "#ec4899"),
+            "security": COLORS.get("color_security", COLORS['error']),
+            "external_tools": COLORS.get("color_external", "#06b6d4"),
+        }
+        
+        # Get section color from parent section
+        section_id = getattr(parent, '_section_id', '')
+        section_color = category_colors.get(section_id, COLORS['accent_primary'])
 
         for index, tool in enumerate(tools):
             tool_id = tool.get("id", "")
-            icon = tool.get("icon", "")
+            icon = tool.get("icon", "") or "⚙️"  # Default icon if missing
             title = tool.get("title", "")
             tooltip = tool.get("description", "")
+            requires_admin = tool.get("requires_admin", False)
+            
+            # Normalize icon size - use larger, more attractive icons
+            icon = self._normalize_icon(icon)
 
             handler = lambda tid=tool_id: self._execute_tool(tid)
 
@@ -182,13 +312,35 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
                 subtitle="",
                 command=handler,
                 tooltip=tooltip,
-                width=100,
-                height=100
+                width=120,
+                height=120,
+                requires_admin=requires_admin,
+                accent_color=section_color
             )
 
             row = index // columns
             col = index % columns
-            button.grid(row=row, column=col, padx=8, pady=8)
+            button.grid(row=row, column=col, padx=10, pady=10, sticky='nsew')
+    
+    def _normalize_icon(self, icon: str) -> str:
+        """Normalize icon to ensure consistent, attractive appearance"""
+        # Map common icons to better alternatives
+        icon_map = {
+            "": "⚙️",
+            "🧹": "✨",  # Sparkles for cleanup
+            "🗑": "🗑️",  # Ensure full emoji
+            "🔄": "🔄",
+            "🌐": "🌐",
+            "📁": "📂",
+            "🧠": "🧠",
+            "💾": "💾",
+            "🔧": "🔧",
+            "🛠": "🛠️",
+            "💿": "💿",
+            "🏪": "🏪",
+            "⏸️": "⏸️",
+        }
+        return icon_map.get(icon, icon) if icon in icon_map else (icon or "⚙️")
 
     def _execute_tool(self, tool_id: str):
         if tool_id == "network_stats":
@@ -199,8 +351,18 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             return False, "Tool not configured"
 
         tool = self.tool_registry.get_tool_by_id(tool_id) or {}
-        if not self._confirm_admin_if_needed(tool):
-            return False, "Cancelled"
+        
+        # Check and request admin elevation if needed
+        if tool.get("requires_admin"):
+            if not self._is_admin():
+                # Request elevation
+                from src.utils.admin_elevator import run_command_elevated
+                # For now, we'll still use the existing method but show better messaging
+                if not self._confirm_admin_if_needed(tool):
+                    return False, "Administrator privileges required"
+            else:
+                # Already admin, proceed
+                pass
 
         if tool_id in {"sfc_scan", "dism_repair"}:
             return self._run_with_progress(tool_id)
@@ -301,3 +463,51 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         self.after(0, _ask)
         ready.wait()
         return result["value"]
+    
+    def _show_help(self):
+        """Show help dialog for maintenance tools"""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Maintenance Tools Help")
+        dialog.geometry("600x400")
+        dialog.configure(fg_color=COLORS['bg_primary'])
+        dialog.transient(self.winfo_toplevel())
+        dialog.grab_set()
+        
+        header = ctk.CTkLabel(
+            dialog,
+            text="🛠️ Maintenance Tools Guide",
+            font=('Segoe UI', 20, 'bold'),
+            text_color=COLORS['text_primary']
+        )
+        header.pack(pady=(20, 10))
+        
+        help_text = (
+            "Quick Cleanup: Fast, safe operations you can run daily\n"
+            "Memory & Disk: Deep cleaning and optimization\n"
+            "Network: Network-related maintenance\n"
+            "System Repair: Advanced repair tools (may take time)\n"
+            "Privacy: Privacy and data protection tools\n"
+            "Security: Security-related maintenance\n"
+            "External Tools: Launch third-party utilities\n\n"
+            "🔒 = Requires Administrator privileges\n"
+            "Tools are color-coded by category for easy identification."
+        )
+        
+        body = ctk.CTkLabel(
+            dialog,
+            text=help_text,
+            font=('Segoe UI', 13),
+            text_color=COLORS['text_secondary'],
+            justify='left',
+            anchor='w'
+        )
+        body.pack(fill='both', expand=True, padx=30, pady=10)
+        
+        ctk.CTkButton(
+            dialog,
+            text="Close",
+            width=120,
+            fg_color=COLORS['accent_primary'],
+            hover_color=COLORS['accent_secondary'],
+            command=dialog.destroy
+        ).pack(pady=20)

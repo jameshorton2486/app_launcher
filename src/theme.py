@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
-# Premium dark theme colors (fallback if config load fails)
+# Premium dark theme colors with vibrant accents (fallback if config load fails)
 DEFAULT_COLORS = {
     "bg_base": "#0f0f12",
     "bg_primary": "#16161a",
@@ -31,6 +31,15 @@ DEFAULT_COLORS = {
     "border_subtle": "#27272a",
     "border_default": "#3f3f46",
     "border_strong": "#52525b",
+    # Vibrant category colors
+    "color_cleanup": "#10b981",  # Green
+    "color_memory": "#3b82f6",   # Blue
+    "color_network": "#8b5cf6",  # Purple
+    "color_repair": "#f59e0b",   # Orange
+    "color_privacy": "#ec4899",  # Pink
+    "color_security": "#ef4444", # Red
+    "color_external": "#06b6d4", # Cyan
+    "color_optimization": "#f97316", # Orange-red
 }
 
 DEFAULT_SPACING = {
