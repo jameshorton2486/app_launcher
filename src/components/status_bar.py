@@ -1,7 +1,7 @@
 """
 Status Bar Component
 Displays application status, git info, and system info.
-Enhanced with modern spacing and visual hierarchy.
+Enhanced with color-coded states and visual hierarchy.
 """
 
 import customtkinter as ctk
@@ -9,6 +9,8 @@ import sys
 import os
 import threading
 import time
+import queue
+from enum import Enum
 
 # Try to import psutil, but don't fail if not available
 try:
@@ -25,30 +27,36 @@ if parent_dir not in sys.path:
 
 from src.theme import COLORS
 
-# Optional: use extended theme for spacing if available
+# Design tokens for status bar
 try:
-    from src.utils.theme_extended import SPACING
-    _PADX, _PADY = 12, 6
-    _HEIGHT = 34
+    from src.utils.theme_extended import THEME, SPACING
+    _BG = THEME.get("panel", COLORS.get("bg_secondary", "#161a22"))
+    _BORDER = THEME.get("border", COLORS.get("border", "#2a3142"))
+    _PADX = getattr(SPACING, 'md', 12)
+    _PADY = getattr(SPACING, 'sm', 8)
+    _HEIGHT = 40  # Vertical padding — visually separated
 except ImportError:
-    _PADX, _PADY = 10, 5
-    _HEIGHT = 30
+    _BG = COLORS.get("bg_secondary", "#1e1e24")
+    _BORDER = COLORS.get("border", "#3f3f46")
+    _PADX, _PADY = 12, 8
+    _HEIGHT = 38
+
+
+class StatusType(Enum):
+    """Status types with associated colors and indicators."""
+    READY = ("ready", "#6b7280", "●")
+    INFO = ("info", "#3b82f6", "●")
+    SUCCESS = ("success", "#22c55e", "●")
+    WARNING = ("warning", "#f59e0b", "●")
+    ERROR = ("error", "#ef4444", "●")
+    LOADING = ("loading", "#a0a6b8", "◌")
 
 
 class StatusBar(ctk.CTkFrame):
-    """Status bar component at bottom of window"""
+    """Status bar — vertical padding, visual separation, muted severity colors."""
     
     def __init__(self, parent, on_settings_click=None, on_help_click=None, on_screenshot_click=None):
-        """
-        Initialize status bar
-
-        Args:
-            parent: Parent widget
-            on_settings_click: Optional callback for settings button click
-            on_help_click: Optional callback for help button click
-            on_screenshot_click: Optional callback for screenshot button click
-        """
-        super().__init__(parent, fg_color=COLORS['bg_secondary'], corner_radius=0, height=_HEIGHT)
+        super().__init__(parent, fg_color=_BG, corner_radius=0, height=_HEIGHT, border_width=0)
         self.pack_propagate(False)
         
         self.status_text = "Ready"
@@ -57,13 +65,17 @@ class StatusBar(ctk.CTkFrame):
         self.on_settings_click = on_settings_click
         self.on_help_click = on_help_click
         self.on_screenshot_click = on_screenshot_click
+        self._ram_queue = queue.Queue()  # Thread-safe: worker puts, main thread polls
         
         self.setup_ui()
     
     def setup_ui(self):
         """Set up the status bar UI"""
-        # Left: Status label
-        # Status indicator dot (subtle)
+        # Top border — visual separation from content
+        top_sep = ctk.CTkFrame(self, height=1, fg_color=_BORDER)
+        top_sep.pack(fill='x', side='top')
+        
+        # Left: Status indicator dot (subtle)
         self._indicator = ctk.CTkLabel(
             self,
             text="●",
@@ -83,8 +95,8 @@ class StatusBar(ctk.CTkFrame):
         self.status_label.pack(side='left', padx=(0, _PADX), pady=_PADY)
         
         # Separator
-        separator1 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator1.pack(side='left', fill='y', padx=4, pady=4)
+        separator1 = ctk.CTkFrame(self, width=1, fg_color=_BORDER)
+        separator1.pack(side='left', fill='y', padx=4, pady=6)
         
         # Center: Git status label
         self.git_label = ctk.CTkLabel(
@@ -191,18 +203,24 @@ class StatusBar(ctk.CTkFrame):
         
         Args:
             text: Status message
-            status_type: Optional - "info", "success", "warning", "error" for indicator color
+            status_type: "info", "success", "warning", "error", or StatusType enum
         """
         self.status_text = text
         self.status_label.configure(text=text)
-        color_map = {
-            "info": COLORS.get("info", "#3b82f6"),
-            "success": COLORS.get("success", "#22c55e"),
-            "warning": COLORS.get("warning", "#f59e0b"),
-            "error": COLORS.get("error", "#ef4444"),
-        }
+        if isinstance(status_type, StatusType):
+            _, color, _ = status_type.value
+        else:
+            color_map = {
+                "info": COLORS.get("info", "#3b82f6"),
+                "success": COLORS.get("success", "#22c55e"),
+                "warning": COLORS.get("warning", "#f59e0b"),
+                "error": COLORS.get("error", "#ef4444"),
+                "ready": COLORS.get("text_tertiary", "#6b7280"),
+                "loading": COLORS.get("text_secondary", "#a0a6b8"),
+            }
+            color = color_map.get(status_type, color_map["info"])
         if hasattr(self, '_indicator'):
-            self._indicator.configure(text_color=color_map.get(status_type, color_map["info"]))
+            self._indicator.configure(text_color=color)
     
     def set_git_status(self, text: str):
         """Set git status text"""
@@ -225,26 +243,69 @@ class StatusBar(ctk.CTkFrame):
             pass
     
     def start_ram_monitoring(self):
-        """Start monitoring RAM usage in background"""
+        """Start monitoring RAM usage in background (queue-based, main-thread safe)"""
         if not PSUTIL_AVAILABLE:
             self.ram_label.configure(text="RAM: N/A (install psutil)")
             return
+        
+        ram_queue = self._ram_queue
         
         def monitor_ram():
             try:
                 while True:
                     try:
                         ram_percent = psutil.virtual_memory().percent
-                        self.after(0, lambda p=ram_percent: self.set_ram_usage(p))
-                    except:
+                        ram_queue.put(ram_percent)
+                    except Exception:
                         pass
-                    time.sleep(5)  # Update every 5 seconds
-            except:
+                    time.sleep(5)
+            except Exception:
                 pass
         
-        thread = threading.Thread(target=monitor_ram, daemon=True)
-        thread.start()
+        def poll_ram_queue():
+            try:
+                while True:
+                    try:
+                        p = ram_queue.get_nowait()
+                        self.set_ram_usage(p)
+                    except queue.Empty:
+                        break
+            except Exception:
+                pass
+            if self.winfo_exists():
+                self.after(1000, poll_ram_queue)
+        
+        threading.Thread(target=monitor_ram, daemon=True).start()
+        self.after(2000, poll_ram_queue)
     
+    def set_loading(self, message: str = "Processing..."):
+        """Show loading / busy indication."""
+        self.set_status(message, StatusType.LOADING)
+        if hasattr(self, '_indicator'):
+            self._indicator.configure(text="◌")
+
+    def clear_loading(self):
+        """Clear loading state, restore normal indicator."""
+        if hasattr(self, '_indicator'):
+            self._indicator.configure(text="●")
+        self.set_ready()
+
+    def set_ready(self):
+        """Reset to ready state."""
+        self.set_status("Ready", StatusType.READY)
+
+    def set_success(self, message: str):
+        """Show success state."""
+        self.set_status(message, StatusType.SUCCESS)
+
+    def set_error(self, message: str):
+        """Show error state."""
+        self.set_status(message, StatusType.ERROR)
+
+    def set_warning(self, message: str):
+        """Show warning state."""
+        self.set_status(message, StatusType.WARNING)
+
     def update_all(self, status: str = None, git: str = None, system: str = None):
         """Update all status fields at once"""
         if status is not None:
@@ -252,5 +313,4 @@ class StatusBar(ctk.CTkFrame):
         if git is not None:
             self.set_git_status(git)
         if system is not None:
-            # System info is now RAM usage, handled separately
             pass

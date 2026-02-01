@@ -17,6 +17,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.services.file_service import FileService
 from src.components.file_item import FileItem
 
@@ -88,30 +89,26 @@ class DownloadsTab(ctk.CTkFrame):
         self.folder_path_label.pack(side='left', padx=(0, 10), pady=8, fill='x', expand=True)
         
         # Open folder button
-        open_btn = ctk.CTkButton(
+        open_btn = Button3D(
             header_frame,
             text="Open Folder",
-            width=100,
-            height=32,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            width=110,
+            height=34,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.open_folder
         )
-        open_btn.pack(side='right', padx=(5, 10), pady=8)
+        open_btn.pack(side='right', padx=(8, 12), pady=8)
         
         # Refresh button
-        refresh_btn = ctk.CTkButton(
+        refresh_btn = Button3D(
             header_frame,
             text="Refresh",
             width=100,
-            height=32,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            height=34,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.refresh_files
         )
-        refresh_btn.pack(side='right', padx=(5, 0), pady=8)
+        refresh_btn.pack(side='right', padx=(0, 8), pady=8)
         
         # Filter row
         filter_frame = ctk.CTkFrame(self, fg_color=COLORS['bg_secondary'], corner_radius=0)
@@ -189,27 +186,23 @@ class DownloadsTab(ctk.CTkFrame):
         self.selected_label.pack(side='left', padx=10, pady=8)
         
         # Move Selected button
-        move_selected_btn = ctk.CTkButton(
+        move_selected_btn = Button3D(
             footer_frame,
             text="Move Selected",
             width=120,
             height=32,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.move_selected
         )
         move_selected_btn.pack(side='right', padx=(5, 10), pady=8)
         
         # Delete Selected button
-        delete_selected_btn = ctk.CTkButton(
+        delete_selected_btn = Button3D(
             footer_frame,
             text="Delete Selected",
             width=120,
             height=32,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['accent_danger'],
-            hover_color='#cc0000',
+            bg_color=BUTTON_COLORS.DANGER,
             command=self.delete_selected
         )
         delete_selected_btn.pack(side='right', padx=(5, 0), pady=8)

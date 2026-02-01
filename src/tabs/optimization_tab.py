@@ -17,6 +17,10 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+try:
+    from src.utils.theme_extended import SPACING
+except ImportError:
+    SPACING = type('SPACING', (), {'lg': 16, 'md': 12, 'xl': 20, 'xxl': 24})()
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
 from src.components.utility_button import UtilityButton
@@ -121,12 +125,12 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 text_color=COLORS['text_secondary'],
                 anchor='w'
             )
-            empty_label.pack(fill='x', padx=20, pady=20)
+            empty_label.pack(fill='x', padx=SPACING.xl, pady=SPACING.xl)
             return
 
         for section in sections:
             card = ctk.CTkFrame(self, fg_color=COLORS['border_default'], corner_radius=16)
-            card.pack(fill='x', padx=40, pady=12)
+            card.pack(fill='x', padx=SPACING.xxl, pady=SPACING.md)
 
             section_frame = CollapsibleSection(
                 card,

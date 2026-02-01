@@ -100,15 +100,40 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
             if not tool_registry.get_tool_by_id(resolved_id):
                 resolved_id = tool_id_aliases.get(tool_id, tool_id)
             if tool_registry.get_tool_by_id(resolved_id):
-                return lambda tid=resolved_id: tool_registry.execute_tool(tid, config_manager)
+                def handler():
+                    return tool_registry.execute_tool(resolved_id, config_manager)
+                return handler
             logger.warning(f"Tray tool handler missing for {tool_id}")
             return lambda: (False, "Tool not configured")
+
+        def make_show_window_handler(app_ref):
+            def handler(icon, item):
+                show_window(app_ref)
+            return handler
+
+        def make_project_launcher(project_ref, proc_svc):
+            def handler(icon, item):
+                launch_project(project_ref, proc_svc)
+            return handler
+
+        def make_utility_handler(utility_fn, name_str):
+            def handler(icon, item):
+                run_utility(utility_fn, name_str)
+            return handler
+
+        def make_exit_handler(app_ref):
+            def handler(icon, item):
+                exit_app(app_ref)
+            return handler
+
+        def default_action_handler(icon):
+            show_window(app_instance)
 
         # Open App Launcher
         menu_items.append(
             pystray.MenuItem(
                 'Open App Launcher',
-                lambda icon, item: show_window(app_instance)
+                make_show_window_handler(app_instance)
             )
         )
         menu_items.append(pystray.Menu.SEPARATOR)
@@ -116,15 +141,12 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         # Quick Launch submenu
         if projects:
             quick_launch_items = []
-            def make_project_handler(project):
-                return lambda icon, item: launch_project(project, process_service)
-
             for project in projects[:20]:  # Limit to 20 projects
                 project_name = project.get('name', 'Unnamed')
                 quick_launch_items.append(
                     pystray.MenuItem(
                         project_name,
-                        make_project_handler(project)
+                        make_project_launcher(project, process_service)
                     )
                 )
             menu_items.append(
@@ -139,45 +161,27 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         utilities_items = [
             pystray.MenuItem(
                 'Empty Recycle Bin',
-                lambda icon, item: run_utility(
-                    get_tool_handler("empty_recycle_bin"),
-                    "Empty Recycle Bin"
-                )
+                make_utility_handler(get_tool_handler("empty_recycle_bin"), "Empty Recycle Bin")
             ),
             pystray.MenuItem(
                 'Clear Temp Files',
-                lambda icon, item: run_utility(
-                    get_tool_handler("clear_temp_files"),
-                    "Clear Temp Files"
-                )
+                make_utility_handler(get_tool_handler("clear_temp_files"), "Clear Temp Files")
             ),
             pystray.MenuItem(
                 'Flush DNS',
-                lambda icon, item: run_utility(
-                    get_tool_handler("flush_dns"),
-                    "Flush DNS"
-                )
+                make_utility_handler(get_tool_handler("flush_dns"), "Flush DNS")
             ),
             pystray.MenuItem(
                 'Clear Prefetch',
-                lambda icon, item: run_utility(
-                    get_tool_handler("clear_prefetch"),
-                    "Clear Prefetch"
-                )
+                make_utility_handler(get_tool_handler("clear_prefetch"), "Clear Prefetch")
             ),
             pystray.MenuItem(
                 'Clear RAM Standby',
-                lambda icon, item: run_utility(
-                    get_tool_handler("clear_standby_ram"),
-                    "Clear RAM Standby"
-                )
+                make_utility_handler(get_tool_handler("clear_standby_ram"), "Clear RAM Standby")
             ),
             pystray.MenuItem(
                 'Restart Explorer',
-                lambda icon, item: run_utility(
-                    get_tool_handler("restart_explorer"),
-                    "Restart Explorer"
-                )
+                make_utility_handler(get_tool_handler("restart_explorer"), "Restart Explorer")
             ),
         ]
         menu_items.append(
@@ -204,20 +208,20 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         menu_items.append(
             pystray.MenuItem(
                 'Exit',
-                lambda icon, item: exit_app(app_instance)
+                make_exit_handler(app_instance)
             )
         )
 
         # Create menu
         menu = pystray.Menu(*menu_items)
-    
+
         # Create icon with default action (left-click) to show window
         icon = pystray.Icon(
             "App Launcher",
             image,
             "James's Project Launcher",
             menu,
-            default_action=lambda icon: show_window(app_instance)
+            default_action=default_action_handler
         )
         logger.debug("Tray icon created successfully")
         return icon

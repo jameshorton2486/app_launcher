@@ -18,6 +18,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.services.git_service import GitService
 from src.services.process_service import ProcessService
 from src.components.project_card import ProjectCard
@@ -79,43 +80,37 @@ class ProjectsTab(ctk.CTkFrame):
         actions_frame.pack(fill='x', padx=0, pady=0)
         
         # Add project button
-        add_btn = ctk.CTkButton(
+        add_btn = Button3D(
             actions_frame,
             text="+ Add Project",
-            width=120,
-            height=32,
-            font=('Segoe UI', 11),
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            width=130,
+            height=34,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.add_project
         )
-        add_btn.pack(side='left', padx=10, pady=8)
+        add_btn.pack(side='left', padx=12, pady=10)
         
         # Refresh git status button
-        refresh_btn = ctk.CTkButton(
+        refresh_btn = Button3D(
             actions_frame,
-            text="🔄 Refresh Git Status",
-            width=150,
-            height=32,
-            font=('Segoe UI', 11),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            text="Refresh Git Status",
+            width=160,
+            height=34,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.refresh_all_git_status
         )
-        refresh_btn.pack(side='left', padx=5, pady=8)
+        refresh_btn.pack(side='left', padx=6, pady=10)
         
         # Git pull all button
-        pull_all_btn = ctk.CTkButton(
+        pull_all_btn = Button3D(
             actions_frame,
             text="Git Pull All",
             width=120,
-            height=32,
-            font=('Segoe UI', 11),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            height=34,
+            bg_color=BUTTON_COLORS.INFO,
             command=self.pull_all_projects
         )
-        pull_all_btn.pack(side='left', padx=5, pady=8)
+        pull_all_btn.pack(side='left', padx=6, pady=10)
         
         # Sort dropdown
         sort_label = ctk.CTkLabel(
@@ -316,20 +311,15 @@ class ProjectsTab(ctk.CTkFrame):
     
     def start_git_polling(self):
         """Start git status monitoring using GitService's built-in monitoring"""
-        # Register callback for status updates
-        self.git_service.register_status_callback(self.on_git_status_update)
-        
-        # Start monitoring
+        # Use closure over queue only — no self access from background thread
+        update_queue = self._git_update_queue
+        def on_update(project_id: str, status: Dict):
+            update_queue.put((project_id, status))
+        self.git_service.register_status_callback(on_update)
         self.git_service.start_status_monitoring(self.projects, interval=60)
     
     def on_git_status_update(self, project_id: str, status: Dict):
-        """
-        Callback for git status updates
-        
-        Args:
-            project_id: Project ID or name
-            status: Status dictionary
-        """
+        """Legacy callback — prefer on_update closure in start_git_polling."""
         self._git_update_queue.put((project_id, status))
 
     def _start_git_update_polling(self):

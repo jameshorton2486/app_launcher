@@ -18,6 +18,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS, apply_theme
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.config_manager import ConfigManager
 from src.components.search_bar import SearchBar
 from src.components.status_bar import StatusBar
@@ -39,14 +40,14 @@ from src.utils.logger import logger
 
 SIDEBAR_WIDTH_EXPANDED = 240
 SIDEBAR_WIDTH_COLLAPSED = 72
-SIDEBAR_ITEM_HEIGHT = 44
+SIDEBAR_ITEM_HEIGHT = 48  # Larger click targets
 
 
 class SidebarNavItem(ctk.CTkFrame):
     """Sidebar navigation item with hover and active states."""
 
     def __init__(self, parent, label: str, icon: str, command, show_indicator: bool = False):
-        super().__init__(parent, fg_color='transparent', corner_radius=8, height=SIDEBAR_ITEM_HEIGHT)
+        super().__init__(parent, fg_color='transparent', corner_radius=10, height=SIDEBAR_ITEM_HEIGHT)
         self.label_text = label
         self.icon = icon
         self.command = command
@@ -56,7 +57,7 @@ class SidebarNavItem(ctk.CTkFrame):
 
         self.pack_propagate(False)
 
-        self.left_border = ctk.CTkFrame(self, width=3, fg_color='transparent', corner_radius=0)
+        self.left_border = ctk.CTkFrame(self, width=4, fg_color='transparent', corner_radius=0)
         self.left_border.pack(side='left', fill='y')
 
         self.content = ctk.CTkFrame(self, fg_color='transparent', corner_radius=8)
@@ -69,7 +70,7 @@ class SidebarNavItem(ctk.CTkFrame):
             text_color=COLORS['text_secondary'],
             anchor='w'
         )
-        self.label.pack(side='left', fill='both', expand=True, padx=16)
+        self.label.pack(side='left', fill='both', expand=True, padx=20)
 
         self.indicator = ctk.CTkLabel(
             self.content,
@@ -100,13 +101,13 @@ class SidebarNavItem(ctk.CTkFrame):
     def set_active(self, active: bool):
         self._active = active
         if active:
-            self.left_border.configure(fg_color=COLORS['accent_primary'])
-            self.content.configure(fg_color='transparent')
-            self.label.configure(text_color=COLORS['text_primary'])
+            self.left_border.configure(fg_color=COLORS['accent_primary'], width=4)
+            self.content.configure(fg_color=COLORS.get('bg_hover', '#2e2e38'))
+            self.label.configure(text_color=COLORS['text_primary'], font=('Segoe UI', 12, 'bold'))
         else:
-            self.left_border.configure(fg_color='transparent')
+            self.left_border.configure(fg_color='transparent', width=4)
             self.content.configure(fg_color='transparent')
-            self.label.configure(text_color=COLORS['text_secondary'])
+            self.label.configure(text_color=COLORS['text_secondary'], font=('Segoe UI', 12, 'bold'))
 
     def set_collapsed(self, collapsed: bool):
         self._collapsed = collapsed
@@ -372,8 +373,13 @@ class AppLauncher(ctk.CTk):
         self.start_git_status_monitoring()
 
     def _build_sidebar(self):
+        try:
+            from src.utils.theme_extended import SPACING
+            _pad = getattr(SPACING, 'md', 12)
+        except ImportError:
+            _pad = 12
         header_frame = ctk.CTkFrame(self.sidebar, fg_color=COLORS['bg_primary'], corner_radius=0)
-        header_frame.pack(fill='x', padx=12, pady=(12, 8))
+        header_frame.pack(fill='x', padx=_pad, pady=(_pad, _pad))
 
         self.sidebar_title = ctk.CTkLabel(
             header_frame,
@@ -396,7 +402,7 @@ class AppLauncher(ctk.CTk):
         self.sidebar_toggle.pack(side='right')
 
         nav_frame = ctk.CTkFrame(self.sidebar, fg_color=COLORS['bg_primary'], corner_radius=0)
-        nav_frame.pack(fill='both', expand=True, padx=8, pady=8)
+        nav_frame.pack(fill='both', expand=True, padx=_pad, pady=_pad)
 
         nav_items = [
             ("Dashboard", "🏠"),
@@ -414,11 +420,11 @@ class AppLauncher(ctk.CTk):
                 command=lambda n=name: self.show_view(n),
                 show_indicator=(name == "Dashboard")
             )
-            item.pack(fill='x', pady=2)
+            item.pack(fill='x', pady=4)
             self._nav_items[name] = item
 
         footer_frame = ctk.CTkFrame(self.sidebar, fg_color=COLORS['bg_primary'], corner_radius=0)
-        footer_frame.pack(fill='x', side='bottom', padx=12, pady=12)
+        footer_frame.pack(fill='x', side='bottom', padx=_pad, pady=_pad)
 
         footer_top = ctk.CTkFrame(footer_frame, fg_color='transparent')
         footer_top.pack(fill='x')
@@ -671,12 +677,12 @@ class AppLauncher(ctk.CTk):
             anchor='w'
         ).pack(fill='x')
 
-        ctk.CTkButton(
+        Button3D(
             frame,
             text="Close",
             width=120,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            height=36,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=dialog.destroy
         ).pack(pady=20)
 
@@ -1065,30 +1071,30 @@ class AppLauncher(ctk.CTk):
         actions = ctk.CTkFrame(dialog, fg_color='transparent')
         actions.pack(fill='x', padx=20, pady=(10, 16))
 
-        ctk.CTkButton(
+        Button3D(
             actions,
             text="View Details",
             width=140,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['bg_hover'],
+            height=36,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: (dialog.destroy(), self.show_view("Dashboard"))
         ).pack(side='left')
 
-        ctk.CTkButton(
+        Button3D(
             actions,
             text="Run Quick Cleanup",
             width=160,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            height=36,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=lambda: (dialog.destroy(), self.dashboard_tab._run_quick_cleanup())
         ).pack(side='left', padx=8)
 
-        ctk.CTkButton(
+        Button3D(
             actions,
             text="Dismiss",
             width=120,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['bg_hover'],
+            height=36,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=dialog.destroy
         ).pack(side='right')
     

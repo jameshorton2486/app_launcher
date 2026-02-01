@@ -194,13 +194,12 @@ class DashboardTab(ctk.CTkScrollableFrame):
         )
         title.pack(side='left')
 
-        scan_btn = ctk.CTkButton(
+        scan_btn = Button3D(
             header,
             text="Scan",
             width=100,
             height=28,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['bg_hover'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self._run_health_scan
         )
         scan_btn.pack(side='right')
@@ -628,13 +627,12 @@ class DashboardTab(ctk.CTkScrollableFrame):
             tool_id = rec.get("tool_id")
             action = rec.get("action")
             if tool_id or action:
-                btn = ctk.CTkButton(
+                btn = Button3D(
                     row,
                     text="Run Now",
                     width=90,
                     height=26,
-                    fg_color=COLORS['bg_tertiary'],
-                    hover_color=COLORS['bg_hover'],
+                    bg_color=BUTTON_COLORS.PRIMARY,
                     command=lambda tid=tool_id, act=action: self._run_recommendation(tid, act)
                 )
                 btn.pack(side='right', padx=(10, 0))

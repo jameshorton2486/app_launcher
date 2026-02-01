@@ -2,6 +2,14 @@
 
 A modern, centralized hub for launching projects, managing files, running utilities, and integrating with development tools. Built with CustomTkinter for a beautiful, modern interface.
 
+## UI Overhaul (v2.1)
+
+- **Button3D**: 3D buttons with shadow, hover, and press states; semantic colors (primary, secondary, danger, etc.).
+- **CardFrame**: Elevated card containers with consistent borders and optional hover.
+- **StatusBar**: Color-coded states (`StatusType`), `set_ready` / `set_success` / `set_error` / `set_warning` / `set_loading`.
+- **Design system**: `config/design_system.json` and `src/utils/theme_extended.py` with THEME dict, SPACING scale, typography, corner_radius, elevation.
+- **Tray icon**: Fixed pystray `MenuItem` callbacks (factory functions, no lambdas); thread-safe UI updates via queue.
+
 ## Features
 
 ### 🚀 Projects Tab

@@ -17,6 +17,11 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
+try:
+    from src.utils.theme_extended import SPACING
+except ImportError:
+    SPACING = type('SPACING', (), {'lg': 16, 'md': 12, 'xl': 20, 'xxl': 24, 'xxxl': 32})()
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
 from src.components.utility_button import UtilityButton
@@ -146,7 +151,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
     def setup_ui(self):
         # Enhanced header with gradient effect
         header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=40, pady=(32, 20))
+        header.pack(fill='x', padx=SPACING.xxl, pady=(SPACING.xxxl, SPACING.xl))
 
         # Title section
         title_frame = ctk.CTkFrame(header, fg_color='transparent')
@@ -187,31 +192,24 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         actions_frame = ctk.CTkFrame(header, fg_color='transparent')
         actions_frame.pack(fill='x', pady=(12, 0))
 
-        quick_cleanup = ctk.CTkButton(
+        quick_cleanup = Button3D(
             actions_frame,
             text="🚀 Run Quick Cleanup",
             width=240,
             height=44,
-            fg_color=COLORS.get("color_cleanup", COLORS['success']),
-            hover_color="#059669",
+            bg_color=BUTTON_COLORS.SUCCESS,
             font=('Segoe UI', 14, 'bold'),
-            corner_radius=12,
-            border_width=0,
             command=self._run_quick_cleanup
         )
         quick_cleanup.pack(side='left', padx=(0, 12))
         
-        # Add info button with different color
-        info_btn = ctk.CTkButton(
+        info_btn = Button3D(
             actions_frame,
             text="ℹ️ Help",
             width=120,
             height=44,
-            fg_color=COLORS['info'],
-            hover_color="#2563eb",
+            bg_color=BUTTON_COLORS.INFO,
             font=('Segoe UI', 13, 'bold'),
-            corner_radius=12,
-            border_width=0,
             command=lambda: self._show_help()
         )
         info_btn.pack(side='left')
@@ -503,11 +501,11 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         )
         body.pack(fill='both', expand=True, padx=30, pady=10)
         
-        ctk.CTkButton(
+        Button3D(
             dialog,
             text="Close",
             width=120,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            height=36,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=dialog.destroy
         ).pack(pady=20)

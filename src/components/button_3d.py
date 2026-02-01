@@ -16,6 +16,7 @@ if parent_dir not in sys.path:
 
 try:
     from src.utils.theme_extended import ButtonColors
+    from src.utils.animation import TIMING, HoverDebouncer
 except ImportError:
     ButtonColors = type('ButtonColors', (), {
         'PRIMARY': '#1DB954',
@@ -27,6 +28,8 @@ except ImportError:
         'PURPLE': '#8b5cf6',
         'TEAL': '#14b8a6',
     })
+    TIMING = type('TIMING', (), {'HOVER_DELAY': 50})()
+    HoverDebouncer = None
 
 
 class Button3D(ctk.CTkFrame):
@@ -125,6 +128,9 @@ class Button3D(ctk.CTkFrame):
         self._button.bind("<ButtonPress-1>", self._on_press)
         self._button.bind("<ButtonRelease-1>", self._on_release)
 
+        delay = getattr(TIMING, 'HOVER_DELAY', 50) if TIMING else 50
+        self._hover_debouncer = HoverDebouncer(self, delay) if HoverDebouncer else None
+
         self._update_shadow()
 
     @staticmethod
@@ -185,10 +191,20 @@ class Button3D(ctk.CTkFrame):
 
     def _on_enter(self, event=None):
         if self._state == "normal":
+            if self._hover_debouncer:
+                self._hover_debouncer.schedule(self._apply_hover)
+            else:
+                self._is_hovered = True
+                self._update_shadow()
+
+    def _apply_hover(self):
+        if self._state == "normal":
             self._is_hovered = True
             self._update_shadow()
 
     def _on_leave(self, event=None):
+        if self._hover_debouncer:
+            self._hover_debouncer.cancel()
         self._is_hovered = False
         self._is_pressed = False
         self._update_shadow()

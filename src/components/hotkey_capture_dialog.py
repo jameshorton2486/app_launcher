@@ -17,6 +17,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 
 # Try to import logger
 try:
@@ -108,24 +109,22 @@ class HotkeyCaptureDialog(ctk.CTkToplevel):
         button_frame = ctk.CTkFrame(main_frame, fg_color='transparent')
         button_frame.pack(fill='x', pady=(10, 0))
         
-        cancel_btn = ctk.CTkButton(
+        cancel_btn = Button3D(
             button_frame,
             text="Cancel",
             width=100,
             height=32,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_danger'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.cancel
         )
         cancel_btn.pack(side='right', padx=(10, 0))
         
-        self.save_btn = ctk.CTkButton(
+        self.save_btn = Button3D(
             button_frame,
             text="Save",
             width=100,
             height=32,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.save,
             state='disabled'
         )

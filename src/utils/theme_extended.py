@@ -1,11 +1,41 @@
 """
-App Launcher Extended Theme System
-Centralized color palette and styling constants for premium UI.
-Complements src.theme (COLORS) - use THEME, SPACING, STYLES for new components.
+App Launcher Design System — Single Source of Truth
+Global design tokens for visuals. NO MAGIC NUMBERS.
+Phase 1: Visual system foundation.
 """
 
 from dataclasses import dataclass
 from typing import Dict
+
+# ═══════════════════════════════════════════════════════════════════
+# GLOBAL DESIGN TOKENS (MANDATORY)
+# ═══════════════════════════════════════════════════════════════════
+
+# Theme colors — dict for easy access THEME["bg"], THEME["primary"]
+THEME: Dict[str, str] = {
+    "bg": "#0f1115",
+    "panel": "#161a22",
+    "card": "#1c2230",
+    "border": "#2a3142",
+    "text_primary": "#e6e9ef",
+    "text_secondary": "#a0a6b8",
+    "text_muted": "#6b7280",
+    "primary": "#1DB954",
+    "secondary": "#4b5563",
+    "info": "#3b82f6",
+    "success": "#22c55e",
+    "warning": "#f59e0b",
+    "danger": "#ef4444",
+}
+
+# Spacing scale — NO MAGIC NUMBERS. All padding/margins reference this.
+SPACING: Dict[str, int] = {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 20,
+    "xl": 32,
+}
 
 
 @dataclass(frozen=True)
@@ -63,19 +93,19 @@ class ThemeColors:
     overlay: str = "#000000"
 
 
-# Global theme instance
-THEME = ThemeColors()
+# THEME dict is canonical (above). ThemeColors kept for backward compatibility.
+ThemeColorsInstance = ThemeColors()
 
 
-class Spacing:
-    """Consistent spacing values based on 8px grid."""
+class _SpacingProxy:
+    """Spacing scale — attribute access: SPACING.lg, SPACING.xl."""
     xs: int = 4
     sm: int = 8
     md: int = 12
-    lg: int = 16
-    xl: int = 20
-    xxl: int = 24
-    xxxl: int = 32
+    lg: int = 20
+    xl: int = 32
+    xxl: int = 32   # alias for xl
+    xxxl: int = 40  # extra-large
 
 
 class Typography:
@@ -97,19 +127,19 @@ class ComponentStyles:
 
     @staticmethod
     def card_frame() -> Dict:
-        """Elevated card container style."""
+        """Card style: fg_color=card, corner_radius=12, border."""
         return {
-            "fg_color": THEME.bg_card,
+            "fg_color": THEME["card"],
             "corner_radius": 12,
             "border_width": 1,
-            "border_color": THEME.border_default
+            "border_color": THEME["border"]
         }
 
     @staticmethod
     def panel_frame() -> Dict:
         """Side panel or navigation style."""
         return {
-            "fg_color": THEME.bg_panel,
+            "fg_color": THEME["panel"],
             "corner_radius": 0,
             "border_width": 0
         }
@@ -118,20 +148,19 @@ class ComponentStyles:
     def input_field() -> Dict:
         """Text entry field style."""
         return {
-            "fg_color": THEME.bg_input,
-            "border_color": THEME.border_default,
+            "fg_color": THEME["card"],
+            "border_color": THEME["border"],
             "border_width": 1,
             "corner_radius": 6,
-            "text_color": THEME.text_primary,
-            "placeholder_text_color": THEME.text_muted
+            "text_color": THEME["text_primary"],
+            "placeholder_text_color": THEME["text_muted"]
         }
 
     @staticmethod
     def primary_button() -> Dict:
         """Primary action button base style."""
         return {
-            "fg_color": THEME.primary,
-            "hover_color": THEME.primary_hover,
+            "fg_color": THEME["primary"],
             "text_color": "#ffffff",
             "corner_radius": 8
         }
@@ -140,24 +169,24 @@ class ComponentStyles:
     def secondary_button() -> Dict:
         """Secondary action button style."""
         return {
-            "fg_color": THEME.secondary,
-            "hover_color": THEME.secondary_hover,
-            "text_color": THEME.text_primary,
+            "fg_color": THEME["secondary"],
+            "text_color": THEME["text_primary"],
             "corner_radius": 8
         }
 
     @staticmethod
     def danger_button() -> Dict:
-        """Destructive action button style."""
+        """Destructive action button style (isolated only)."""
         return {
-            "fg_color": THEME.danger,
-            "hover_color": THEME.danger_hover,
+            "fg_color": THEME["danger"],
             "text_color": "#ffffff",
             "corner_radius": 8
         }
 
 
-SPACING = Spacing()
+# Attribute access: SPACING.lg, SPACING.xl (for existing code)
+Spacing = _SpacingProxy()
+SPACING = Spacing
 TYPOGRAPHY = Typography()
 STYLES = ComponentStyles()
 

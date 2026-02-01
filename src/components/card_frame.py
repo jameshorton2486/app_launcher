@@ -14,14 +14,11 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 try:
-    from src.utils.theme_extended import THEME, SPACING
+    from src.utils.theme_extended import THEME, SPACING, Spacing
 except ImportError:
-    THEME = type('THEME', (), {
-        'bg_card': '#1c2230', 'bg_panel': '#161a22', 'bg_card_hover': '#242b3d',
-        'border_default': '#2a3142', 'border_subtle': '#1e2433',
-        'text_primary': '#e6e9ef', 'text_secondary': '#a0a6b8',
-    })()
-    SPACING = type('SPACING', (), {'xs': 4, 'sm': 8, 'lg': 16})()
+    THEME = {"card": "#1c2230", "panel": "#161a22", "border": "#2a3142",
+             "text_primary": "#e6e9ef", "text_secondary": "#a0a6b8"}
+    SPACING = Spacing = type('Spacing', (), {'xs': 4, 'sm': 8, 'lg': 20, 'xl': 32})()
 
 
 class CardFrame(ctk.CTkFrame):
@@ -54,17 +51,18 @@ class CardFrame(ctk.CTkFrame):
         """
         self._hover_effect = hover_effect
         self._elevated = elevated
-        self._padding = padding if padding is not None else SPACING.lg
+        pad = getattr(SPACING, 'lg', 20) if hasattr(SPACING, 'lg') else SPACING.get('lg', 20)
+        self._padding = padding if padding is not None else pad
 
-        bg = THEME.bg_card if elevated else THEME.bg_panel
-        hover_bg = THEME.bg_card_hover if elevated else THEME.bg_card
+        bg = THEME["card"] if elevated else THEME["panel"]
+        hover_bg = "#242b3d" if elevated else THEME["card"]
 
         super().__init__(
             parent,
             fg_color=bg,
             corner_radius=12,
             border_width=1,
-            border_color=THEME.border_default,
+            border_color=THEME["border"],
             **kwargs
         )
 
@@ -92,21 +90,23 @@ class CardFrame(ctk.CTkFrame):
 
         Returns the header frame for additional customization.
         """
+        sm = getattr(SPACING, 'sm', 8) if hasattr(SPACING, 'sm') else (SPACING.get('sm', 8) if isinstance(SPACING, dict) else 8)
+        xs = getattr(SPACING, 'xs', 4) if hasattr(SPACING, 'xs') else (SPACING.get('xs', 4) if isinstance(SPACING, dict) else 4)
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=self._padding, pady=(self._padding, SPACING.sm))
+        header.pack(fill="x", padx=self._padding, pady=(self._padding, sm))
 
         title_row = ctk.CTkFrame(header, fg_color="transparent")
         title_row.pack(fill="x")
 
         if icon:
             icon_label = ctk.CTkLabel(title_row, image=icon, text="")
-            icon_label.pack(side="left", padx=(0, SPACING.sm))
+            icon_label.pack(side="left", padx=(0, sm))
 
         title_label = ctk.CTkLabel(
             title_row,
             text=title,
             font=("Segoe UI", 15, "bold"),
-            text_color=THEME.text_primary
+            text_color=THEME["text_primary"]
         )
         title_label.pack(side="left")
 
@@ -115,9 +115,9 @@ class CardFrame(ctk.CTkFrame):
                 header,
                 text=subtitle,
                 font=("Segoe UI", 12),
-                text_color=THEME.text_secondary
+                text_color=THEME["text_secondary"]
             )
-            subtitle_label.pack(anchor="w", pady=(SPACING.xs, 0))
+            subtitle_label.pack(anchor="w", pady=(xs, 0))
 
         return header
 
@@ -143,7 +143,7 @@ class CardFrame(ctk.CTkFrame):
         if separator:
             sep = ctk.CTkFrame(
                 self,
-                fg_color=THEME.border_subtle,
+                fg_color=THEME.get("border", "#2a3142"),
                 height=1
             )
             sep.pack(fill="x", padx=self._padding)

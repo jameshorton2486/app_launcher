@@ -59,12 +59,12 @@ class GitService:
             self._status_callbacks.remove(callback)
     
     def _notify_status_update(self, project_id: str, status: Dict):
-        """Notify all registered callbacks of a status update"""
+        """Notify all registered callbacks of a status update (runs in background thread)"""
         for callback in self._status_callbacks:
             try:
                 callback(project_id, status)
             except Exception as e:
-                logger.error(f"Error in status callback: {e}")
+                logger.error(f"Error in status callback: {e}", exc_info=True)
     
     def _get_repo(self, repo_path: str) -> Optional[Repo]:
         """

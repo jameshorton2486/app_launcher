@@ -19,11 +19,13 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.config_manager import ConfigManager
 from src.utils.constants import SETTINGS_FILE
 from src.utils.tool_usage import ToolUsageStore
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
+from src.utils.theme_loader import THEME_LOADER
 try:
     from src.components.toast import ToastManager
 except Exception:
@@ -188,6 +190,11 @@ class SettingsTab(ctk.CTkScrollableFrame):
         section.pack(fill='x', pady=12)
 
         self.theme_mode = ctk.StringVar(value=self._get_setting('theme.mode', 'dark'))
+        theme_variant_name = self._get_setting('theme.variant', THEME_LOADER.current_theme_name)
+        self.theme_variant_key = ctk.StringVar(value=theme_variant_name)
+        self.theme_variant_display = ctk.StringVar(
+            value=THEME_LOADER._themes.get(theme_variant_name, THEME_LOADER.current_theme).display_name
+        )
         self.sidebar_style = ctk.StringVar(value=self._get_setting('appearance.sidebar_style', 'Expanded'))
         self.button_size = ctk.StringVar(value=self._get_setting('appearance.button_size', 'Medium'))
         self.show_descriptions = ctk.BooleanVar(value=self._get_setting('appearance.show_descriptions', True))
@@ -195,6 +202,16 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.font_size = ctk.IntVar(value=self._get_setting('appearance.font_size', 14))
 
         self._add_dropdown(section.content, "Theme Mode", self.theme_mode, ['dark', 'light', 'system'])
+        theme_variants = THEME_LOADER.available_themes
+        theme_display_map = {name: THEME_LOADER._themes[name].display_name for name in theme_variants}
+        display_values = [theme_display_map[name] for name in theme_variants]
+        self._add_dropdown(
+            section.content,
+            "Theme Variant",
+            self.theme_variant_display,
+            display_values,
+            on_change=self._on_theme_variant_change
+        )
         self._add_dropdown(section.content, "Sidebar Style", self.sidebar_style, ['Expanded', 'Collapsed', 'Auto-hide'])
         self._add_dropdown(section.content, "Button Size", self.button_size, ['Small', 'Medium', 'Large'])
         self._add_checkbox(section.content, "Show Tool Descriptions", self.show_descriptions)
@@ -224,6 +241,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         ctk.CTkButton(color_frame, text="Pick", width=80, command=self.pick_color).pack(side='left')
 
         self.theme_mode.trace_add("write", lambda *_: self._queue_save())
+        self.theme_variant_display.trace_add("write", lambda *_: self._queue_save())
         self.sidebar_style.trace_add("write", lambda *_: self._queue_save())
         self.button_size.trace_add("write", lambda *_: self._queue_save())
         self.show_descriptions.trace_add("write", lambda *_: self._queue_save())
@@ -416,39 +434,35 @@ class SettingsTab(ctk.CTkScrollableFrame):
         actions_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         actions_frame.pack(fill='x', pady=10)
 
-        ctk.CTkButton(
+        Button3D(
             actions_frame,
             text="Reset Statistics",
             width=160,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.reset_usage_stats
         ).pack(side='left', padx=(0, 8))
 
-        ctk.CTkButton(
+        Button3D(
             actions_frame,
             text="Reset to Defaults",
             width=160,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.WARNING,
             command=self.reset_to_defaults
         ).pack(side='left', padx=(0, 8))
 
-        ctk.CTkButton(
+        Button3D(
             actions_frame,
             text="Export Settings",
             width=140,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.INFO,
             command=self.export_settings
         ).pack(side='left', padx=(0, 8))
 
-        ctk.CTkButton(
+        Button3D(
             actions_frame,
             text="Import Settings",
             width=140,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.INFO,
             command=self.import_settings
         ).pack(side='left')
 
@@ -630,6 +644,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._set_setting('window.global_hotkey', hotkey_value)
 
         self._set_setting('theme.mode', self.theme_mode.get())
+        self._set_setting('theme.variant', self.theme_variant_key.get())
         self._set_setting('theme.accent_color', self.accent_color)
 
         self._set_setting('appearance.sidebar_style', self.sidebar_style.get())
@@ -719,6 +734,11 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.show_health_check.set(self._get_setting('ui.show_health_check_on_startup', True))
 
         self.theme_mode.set(self._get_setting('theme.mode', 'dark'))
+        theme_variant_name = self._get_setting('theme.variant', THEME_LOADER.current_theme_name)
+        self.theme_variant_key.set(theme_variant_name)
+        self.theme_variant_display.set(
+            THEME_LOADER._themes.get(theme_variant_name, THEME_LOADER.current_theme).display_name
+        )
         self.sidebar_style.set(self._get_setting('appearance.sidebar_style', 'Expanded'))
         self.button_size.set(self._get_setting('appearance.button_size', 'Medium'))
         self.show_descriptions.set(self._get_setting('appearance.show_descriptions', True))
@@ -748,6 +768,20 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.confirm_service_changes.set(self._get_setting('optimization.confirm_service_changes', True))
         self.log_system_changes.set(self._get_setting('optimization.log_system_changes', False))
         self.show_hw_recommendations.set(self._get_setting('optimization.show_hw_recommendations', True))
+
+    def _on_theme_variant_change(self, display_name: str):
+        for name, theme in THEME_LOADER._themes.items():
+            if theme.display_name == display_name:
+                self.theme_variant_key.set(name)
+                THEME_LOADER.load_theme(name)
+                self._show_restart_notice()
+                break
+
+    def _show_restart_notice(self):
+        self.save_status.configure(
+            text="Theme change requires restart",
+            text_color=COLORS['warning']
+        )
 
     def _get_setting(self, key_path: str, default=None):
         keys = key_path.split('.')
