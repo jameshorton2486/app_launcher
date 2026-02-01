@@ -116,12 +116,15 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         # Quick Launch submenu
         if projects:
             quick_launch_items = []
+            def make_project_handler(project):
+                return lambda icon, item: launch_project(project, process_service)
+
             for project in projects[:20]:  # Limit to 20 projects
                 project_name = project.get('name', 'Unnamed')
                 quick_launch_items.append(
                     pystray.MenuItem(
                         project_name,
-                        lambda icon, item, p=project: launch_project(p, process_service)
+                        make_project_handler(project)
                     )
                 )
             menu_items.append(

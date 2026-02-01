@@ -18,6 +18,8 @@ if parent_dir not in sys.path:
 
 from src.theme import COLORS
 from src.utils.constants import TOOLS_FILE
+from src.components.button_3d import Button3D, BUTTON_COLORS
+from src.components.card_frame import CardFrame
 from src.utils.tool_registry import ToolRegistry
 from src.utils.quick_cleanup import QuickCleanupRunner
 from src.components.smart_monitor import SmartMonitor
@@ -74,7 +76,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
     def setup_ui(self):
         """Build dashboard layout."""
-        # Welcome section
+        # Welcome section with card-style container
         welcome_frame = ctk.CTkFrame(self, fg_color='transparent')
         welcome_frame.pack(fill='x', padx=40, pady=(32, 16))
 
@@ -98,30 +100,28 @@ class DashboardTab(ctk.CTkScrollableFrame):
         subtitle.pack(fill='x', pady=(6, 0))
 
         actions_row = ctk.CTkFrame(welcome_frame, fg_color='transparent')
-        actions_row.pack(anchor='w', pady=(10, 0))
+        actions_row.pack(anchor='w', pady=(16, 0))
 
         if self.on_open_downloads:
-            open_downloads = ctk.CTkButton(
+            open_downloads = Button3D(
                 actions_row,
                 text="Open Downloads Manager",
                 width=200,
-                height=32,
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['bg_hover'],
+                height=36,
+                bg_color=BUTTON_COLORS.SECONDARY,
                 command=self.on_open_downloads
             )
-            open_downloads.pack(side='left')
+            open_downloads.pack(side='left', padx=(0, 12))
 
-        quick_cleanup = ctk.CTkButton(
+        quick_cleanup = Button3D(
             actions_row,
-            text="🚀 Run Quick Cleanup",
-            width=200,
-            height=32,
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            text="Run Quick Cleanup",
+            width=180,
+            height=36,
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self._run_quick_cleanup
         )
-        quick_cleanup.pack(side='left', padx=(12, 0))
+        quick_cleanup.pack(side='left')
 
         # Cards grid
         grid_frame = ctk.CTkFrame(self, fg_color='transparent')

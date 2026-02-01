@@ -1,6 +1,7 @@
 """
 Status Bar Component
-Displays application status, git info, and system info
+Displays application status, git info, and system info.
+Enhanced with modern spacing and visual hierarchy.
 """
 
 import customtkinter as ctk
@@ -24,6 +25,15 @@ if parent_dir not in sys.path:
 
 from src.theme import COLORS
 
+# Optional: use extended theme for spacing if available
+try:
+    from src.utils.theme_extended import SPACING
+    _PADX, _PADY = 12, 6
+    _HEIGHT = 34
+except ImportError:
+    _PADX, _PADY = 10, 5
+    _HEIGHT = 30
+
 
 class StatusBar(ctk.CTkFrame):
     """Status bar component at bottom of window"""
@@ -38,7 +48,8 @@ class StatusBar(ctk.CTkFrame):
             on_help_click: Optional callback for help button click
             on_screenshot_click: Optional callback for screenshot button click
         """
-        super().__init__(parent, fg_color=COLORS['bg_secondary'], corner_radius=0, height=30)
+        super().__init__(parent, fg_color=COLORS['bg_secondary'], corner_radius=0, height=_HEIGHT)
+        self.pack_propagate(False)
         
         self.status_text = "Ready"
         self.git_status = ""
@@ -52,28 +63,38 @@ class StatusBar(ctk.CTkFrame):
     def setup_ui(self):
         """Set up the status bar UI"""
         # Left: Status label
+        # Status indicator dot (subtle)
+        self._indicator = ctk.CTkLabel(
+            self,
+            text="●",
+            font=('Segoe UI', 8),
+            text_color=COLORS['success'],
+            width=16
+        )
+        self._indicator.pack(side='left', padx=(_PADX, 2), pady=_PADY)
+        
         self.status_label = ctk.CTkLabel(
             self,
             text=self.status_text,
-            font=('Segoe UI', 9),
+            font=('Segoe UI', 10),
             text_color=COLORS['text_secondary'],
             anchor='w'
         )
-        self.status_label.pack(side='left', padx=10, pady=5)
+        self.status_label.pack(side='left', padx=(0, _PADX), pady=_PADY)
         
         # Separator
         separator1 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator1.pack(side='left', fill='y', padx=5, pady=5)
+        separator1.pack(side='left', fill='y', padx=4, pady=4)
         
         # Center: Git status label
         self.git_label = ctk.CTkLabel(
             self,
             text="",
-            font=('Segoe UI', 9),
+            font=('Segoe UI', 10),
             text_color=COLORS['text_secondary'],
             anchor='w'
         )
-        self.git_label.pack(side='left', padx=10, pady=5, expand=True)
+        self.git_label.pack(side='left', padx=_PADX, pady=_PADY, expand=True)
         
         # Separator
         separator2 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
@@ -91,9 +112,9 @@ class StatusBar(ctk.CTkFrame):
                 hover_color=COLORS['bg_tertiary'],
                 command=self._on_screenshot_click
             )
-            self.screenshot_btn.pack(side='right', padx=(5, 0), pady=2)
+            self.screenshot_btn.pack(side='right', padx=(4, 0), pady=4)
             separator_screenshot = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-            separator_screenshot.pack(side='right', fill='y', padx=5, pady=5)
+            separator_screenshot.pack(side='right', fill='y', padx=4, pady=4)
 
         # Right: Help button
         self.help_btn = ctk.CTkButton(
@@ -106,11 +127,11 @@ class StatusBar(ctk.CTkFrame):
             hover_color=COLORS['bg_tertiary'],
             command=self._on_help_click
         )
-        self.help_btn.pack(side='right', padx=(5, 0), pady=2)
+        self.help_btn.pack(side='right', padx=(4, 0), pady=4)
 
         # Separator before help
         separator_help = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator_help.pack(side='right', fill='y', padx=5, pady=5)
+        separator_help.pack(side='right', fill='y', padx=4, pady=4)
 
         # Right: Settings button (gear icon)
         self.settings_btn = ctk.CTkButton(
@@ -123,21 +144,21 @@ class StatusBar(ctk.CTkFrame):
             hover_color=COLORS['bg_tertiary'],
             command=self._on_settings_click
         )
-        self.settings_btn.pack(side='right', padx=(5, 5), pady=2)
+        self.settings_btn.pack(side='right', padx=(4, 4), pady=4)
         
         # Separator before settings
         separator3 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator3.pack(side='right', fill='y', padx=5, pady=5)
+        separator3.pack(side='right', fill='y', padx=4, pady=4)
         
         # Right: RAM usage label
         self.ram_label = ctk.CTkLabel(
             self,
             text="RAM: --%",
-            font=('Segoe UI', 9),
+            font=('Segoe UI', 10),
             text_color=COLORS['text_secondary'],
             anchor='e'
         )
-        self.ram_label.pack(side='right', padx=10, pady=5)
+        self.ram_label.pack(side='right', padx=_PADX, pady=_PADY)
         
         # Start RAM monitoring
         self.start_ram_monitoring()
@@ -164,10 +185,24 @@ class StatusBar(ctk.CTkFrame):
         if self.on_screenshot_click:
             self.on_screenshot_click()
     
-    def set_status(self, text: str):
-        """Set main status text"""
+    def set_status(self, text: str, status_type: str = "info"):
+        """
+        Set main status text.
+        
+        Args:
+            text: Status message
+            status_type: Optional - "info", "success", "warning", "error" for indicator color
+        """
         self.status_text = text
         self.status_label.configure(text=text)
+        color_map = {
+            "info": COLORS.get("info", "#3b82f6"),
+            "success": COLORS.get("success", "#22c55e"),
+            "warning": COLORS.get("warning", "#f59e0b"),
+            "error": COLORS.get("error", "#ef4444"),
+        }
+        if hasattr(self, '_indicator'):
+            self._indicator.configure(text_color=color_map.get(status_type, color_map["info"]))
     
     def set_git_status(self, text: str):
         """Set git status text"""

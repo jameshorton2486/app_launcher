@@ -7,6 +7,7 @@ import customtkinter as ctk
 import sys
 import os
 import threading
+import queue
 import time
 from typing import Dict
 
@@ -61,11 +62,14 @@ class ProjectsTab(ctk.CTkFrame):
         # UI components
         self.cards_frame = None
         self.cards = []
+        self._git_update_queue = queue.Queue()
+        self._git_update_polling = False
         
         self.setup_ui()
         self.load_projects()
         
         # Start git status polling
+        self._start_git_update_polling()
         self.start_git_polling()
     
     def setup_ui(self):
@@ -326,15 +330,35 @@ class ProjectsTab(ctk.CTkFrame):
             project_id: Project ID or name
             status: Status dictionary
         """
-        if not self.winfo_exists():
+        self._git_update_queue.put((project_id, status))
+
+    def _start_git_update_polling(self):
+        if self._git_update_polling:
             return
-        # Update the corresponding card
-        for card in self.cards:
-            card_project_id = card.project.get('id') or card.project.get('name', 'unknown')
-            if card_project_id == project_id:
-                # Update card's git status
-                self.after(0, lambda c=card: c.update_git_status())
-                break
+        self._git_update_polling = True
+
+        def poll_queue():
+            if not self.winfo_exists():
+                self._git_update_polling = False
+                return
+
+            try:
+                while True:
+                    try:
+                        project_id, _status = self._git_update_queue.get_nowait()
+                    except queue.Empty:
+                        break
+
+                    for card in self.cards:
+                        card_project_id = card.project.get('id') or card.project.get('name', 'unknown')
+                        if card_project_id == project_id:
+                            card.update_git_status()
+                            break
+            finally:
+                if self._git_update_polling:
+                    self.after(100, poll_queue)
+
+        self.after(100, poll_queue)
     
     def setup_drag_drop(self):
         """Set up drag and drop support for the Projects tab"""
