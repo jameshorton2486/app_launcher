@@ -22,12 +22,13 @@ class HelpManual(ctk.CTkToplevel):
     Features alphabetical and category-based views.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent, allowed_tabs: List[str] | None = None):
         super().__init__(parent)
 
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
         self.usage_store = ToolUsageStore()
+        self.allowed_tabs = [tab.lower() for tab in allowed_tabs] if allowed_tabs else None
 
         self.all_tools: List[Dict[str, Any]] = self._load_tools()
         self.filtered_tools: List[Dict[str, Any]] = list(self.all_tools)
@@ -100,7 +101,10 @@ class HelpManual(ctk.CTkToplevel):
         sections = self.tool_registry._sections if hasattr(self.tool_registry, '_sections') else []
         for section in sections:
             section_title = section.get("title", "Uncategorized")
+            tab = str(section.get("tab", "")).strip().lower()
             for tool in section.get("tools", []):
+                if self.allowed_tabs and tab not in self.allowed_tabs:
+                    continue
                 tool_entry = dict(tool)
                 tool_entry.setdefault("category", section_title.title())
                 tool_entry.setdefault("section_title", section_title)

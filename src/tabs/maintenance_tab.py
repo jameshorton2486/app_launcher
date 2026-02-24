@@ -4,24 +4,14 @@ Loads maintenance tools from registry and displays collapsible sections
 """
 
 import customtkinter as ctk
-import sys
-import os
 import tkinter.messagebox as messagebox
 import threading
 import ctypes
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.components.button_3d import Button3D, BUTTON_COLORS
-try:
-    from src.utils.theme_extended import SPACING
-except ImportError:
-    SPACING = type('SPACING', (), {'lg': 16, 'md': 12, 'xl': 20, 'xxl': 24, 'xxxl': 32})()
+from src.theme import SPACING
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
 from src.components.utility_button import UtilityButton
@@ -57,9 +47,9 @@ class CollapsibleSection(ctk.CTkFrame):
             "memory_disk": COLORS.get("color_memory", COLORS['info']),
             "network": COLORS.get("color_network", COLORS['accent_primary']),
             "system_repair": COLORS.get("color_repair", COLORS['warning']),
-            "privacy": COLORS.get("color_privacy", "#ec4899"),
+            "privacy": COLORS.get("color_privacy", COLORS['accent_secondary']),
             "security": COLORS.get("color_security", COLORS['error']),
-            "external_tools": COLORS.get("color_external", "#06b6d4"),
+            "external_tools": COLORS.get("color_external", COLORS['info']),
         }
         section_id = getattr(self, '_section_id', '')
         section_color = category_colors.get(section_id, COLORS['accent_primary'])
@@ -151,7 +141,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
     def setup_ui(self):
         # Enhanced header with gradient effect
         header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=SPACING.xxl, pady=(SPACING.xxxl, SPACING.xl))
+        header.pack(fill='x', padx=SPACING.get("2xl", 32), pady=(SPACING.get("3xl", 48), SPACING.get("xl", 24)))
 
         # Title section
         title_frame = ctk.CTkFrame(header, fg_color='transparent')
@@ -219,7 +209,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         if not sections:
             empty_label = ctk.CTkLabel(
                 self,
-                text="No maintenance tools configured.",
+                text="Unable to load maintenance tools.\nCheck that config/tools.json is present and valid.",
                 font=('Segoe UI', 14),
                 text_color=COLORS['text_secondary'],
                 anchor='w'
@@ -282,9 +272,9 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             "memory_disk": COLORS.get("color_memory", COLORS['info']),
             "network": COLORS.get("color_network", COLORS['accent_primary']),
             "system_repair": COLORS.get("color_repair", COLORS['warning']),
-            "privacy": COLORS.get("color_privacy", "#ec4899"),
+            "privacy": COLORS.get("color_privacy", COLORS['accent_secondary']),
             "security": COLORS.get("color_security", COLORS['error']),
-            "external_tools": COLORS.get("color_external", "#06b6d4"),
+            "external_tools": COLORS.get("color_external", COLORS['info']),
         }
         
         # Get section color from parent section
@@ -297,6 +287,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             title = tool.get("title", "")
             tooltip = tool.get("description", "")
             requires_admin = tool.get("requires_admin", False)
+            requires_restart = tool.get("requires_restart", False)
             
             # Normalize icon size - use larger, more attractive icons
             icon = self._normalize_icon(icon)
@@ -313,6 +304,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
                 width=120,
                 height=120,
                 requires_admin=requires_admin,
+                requires_restart=requires_restart,
                 accent_color=section_color
             )
 

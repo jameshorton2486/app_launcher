@@ -230,10 +230,7 @@ The app clears multiple caches:
 
 ## Known Differences
 
-- **Tool Count**: You mentioned 70 tools, but verification shows 62 tools. This is likely due to:
-  - Some tools may have been consolidated
-  - Some may be in different sections
-  - The count may include external tools not in tools.json
+- **Tool Count**: Verification confirms **62 tools** in `config/tools.json` with complete metadata. That is the authoritative count for App Launcher v2.0.
 
 All 62 tools in tools.json have complete metadata and are fully functional.
 

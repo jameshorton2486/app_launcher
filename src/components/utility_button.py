@@ -4,16 +4,9 @@ Button with icon, title, loading spinner, and visual feedback
 """
 
 import customtkinter as ctk
-import sys
-import os
 import threading
 import tkinter as tk
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 
@@ -21,7 +14,7 @@ from src.theme import COLORS
 class UtilityButton(ctk.CTkFrame):
     """Button component for utilities with visual feedback and loading spinner"""
     
-    def __init__(self, parent, icon: str, title: str, subtitle: str = "", command=None, tooltip: str = "", width=80, height=80, requires_admin=False, accent_color=None):
+    def __init__(self, parent, icon: str, title: str, subtitle: str = "", command=None, tooltip: str = "", width=80, height=80, requires_admin=False, requires_restart=False, accent_color=None):
         """
         Initialize utility button
         
@@ -54,6 +47,7 @@ class UtilityButton(ctk.CTkFrame):
         self.tooltip = tooltip
         self.is_running = False
         self.requires_admin = requires_admin
+        self.requires_restart = requires_restart
         self.accent_color = accent_color or COLORS['accent_primary']
         
         self.setup_ui()
@@ -74,6 +68,16 @@ class UtilityButton(ctk.CTkFrame):
                 fg_color='transparent'
             )
             self.admin_badge.place(relx=0.85, rely=0.1, anchor='ne')
+
+        if self.requires_restart:
+            self.restart_badge = ctk.CTkLabel(
+                self,
+                text="⟳",
+                font=('Segoe UI', 12, 'bold'),
+                text_color=COLORS.get('warning', COLORS['text_secondary']),
+                fg_color='transparent'
+            )
+            self.restart_badge.place(relx=0.7, rely=0.1, anchor='ne')
         
         # Icon/Spinner container
         self.icon_frame = ctk.CTkFrame(self, fg_color='transparent')

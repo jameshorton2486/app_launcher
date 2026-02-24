@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import re
 import threading
 
+from src.theme import COLORS
+
 # Try to import logger
 try:
     from src.utils.logger import logger
@@ -73,6 +75,41 @@ class ToolRegistry:
             logger.error(f"Unable to read tools config: {exc}")
             self._reset_tools()
 
+    def validate_tools(self, config_manager) -> List[str]:
+        """Validate that each tool resolves to a callable service method."""
+        errors: List[str] = []
+        for tool_id, tool in self._tool_index.items():
+            if not isinstance(tool, dict):
+                continue
+            handler = tool.get("handler") if isinstance(tool.get("handler"), dict) else {}
+            service_name = tool.get("service") or handler.get("service")
+            method_name = tool.get("method") or handler.get("method")
+
+            if not service_name or not method_name:
+                message = f"{tool_id}: missing service or method"
+                logger.warning(message)
+                errors.append(message)
+                continue
+
+            service = self._resolve_service(service_name, config_manager)
+            if not service:
+                message = f"{tool_id}: service not available ({service_name})"
+                logger.warning(message)
+                errors.append(message)
+                continue
+
+            if not hasattr(service, method_name) or not callable(getattr(service, method_name)):
+                message = f"{tool_id}: method not callable ({service_name}.{method_name})"
+                logger.warning(message)
+                errors.append(message)
+                continue
+
+        if errors:
+            logger.warning("Tool validation completed with %s issues", len(errors))
+        else:
+            logger.info("Tool validation completed with no issues")
+        return errors
+
     def get_sections_by_tab(self, tab_name: str) -> List[dict]:
         """Return sections matching a tab name"""
         if not tab_name:
@@ -93,7 +130,7 @@ class ToolRegistry:
             return None
         return self._tool_index.get(tool_id)
 
-    def execute_tool(self, tool_id: str, config_manager) -> Tuple[bool, str]:
+    def execute_tool(self, tool_id: str, config_manager, skip_confirmation: bool = False) -> Tuple[bool, str]:
         """Execute a tool by ID using the configured services"""
         tool = self.get_tool_by_id(tool_id)
         if not tool:
@@ -121,6 +158,8 @@ class ToolRegistry:
         }
 
         try:
+            if not skip_confirmation and not self._confirm_tool_execution(tool):
+                return True, "Cancelled"
             if not self._check_cooldown(tool):
                 return True, "Cancelled"
             result = method(*resolved_args, **resolved_kwargs)
@@ -329,6 +368,30 @@ class ToolRegistry:
         except Exception:
             return True
 
+    def _confirm_tool_execution(self, tool: Dict[str, Any]) -> bool:
+        requires_confirmation = bool(tool.get("requires_confirmation"))
+        is_high_risk = str(tool.get("risk_level", "")).lower() == "high"
+        if not requires_confirmation and not is_high_risk:
+            return True
+
+        tool_name = tool.get("title", tool.get("id", "Tool"))
+        warning = tool.get("warning") or "This action makes system-level changes."
+        restart_note = "This tool requires a restart to fully apply changes." if tool.get("requires_restart") else ""
+
+        title = "High Risk Action" if is_high_risk else "Confirm Action"
+        message_parts = [
+            f"You're about to run: {tool_name}",
+            "",
+            warning,
+        ]
+        if restart_note:
+            message_parts.append("")
+            message_parts.append(restart_note)
+        message_parts.append("")
+        message_parts.append("Do you want to continue?")
+
+        return self._prompt_user(title, "\n".join(message_parts))
+
     def _prompt_cooldown(self, title: str, message: str) -> bool:
         if not tk:
             return self._prompt_user(title, message)
@@ -344,11 +407,11 @@ class ToolRegistry:
             else:
                 dialog = tk.Toplevel(tk._default_root)
             dialog.title(title)
-            dialog.configure(bg="#1f1f1f")
+            dialog.configure(bg=COLORS["bg_primary"])
             dialog.resizable(False, False)
             dialog.attributes("-topmost", True)
 
-            frame = tk.Frame(dialog, bg="#1f1f1f", padx=20, pady=16)
+            frame = tk.Frame(dialog, bg=COLORS["bg_primary"], padx=20, pady=16)
             frame.pack(fill="both", expand=True)
 
             label = tk.Label(
@@ -356,13 +419,13 @@ class ToolRegistry:
                 text=message,
                 justify="left",
                 anchor="w",
-                bg="#1f1f1f",
-                fg="#e6e6e6",
+                bg=COLORS["bg_primary"],
+                fg=COLORS["text_primary"],
                 wraplength=520
             )
             label.pack(fill="x")
 
-            button_row = tk.Frame(frame, bg="#1f1f1f")
+            button_row = tk.Frame(frame, bg=COLORS["bg_primary"])
             button_row.pack(fill="x", pady=(16, 0))
 
             def cancel():

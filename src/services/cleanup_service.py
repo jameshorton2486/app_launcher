@@ -7,7 +7,6 @@ import subprocess
 import os
 import shutil
 import ctypes
-import sys
 from typing import Tuple, Optional
 from pathlib import Path
 
@@ -27,7 +26,8 @@ class CleanupService:
         """Check if running with administrator privileges"""
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except Exception as e:
+            logger.debug(f"Suppressed exception checking admin status: {e}")
             return False
     
     @staticmethod
@@ -122,10 +122,10 @@ class CleanupService:
                                     os.remove(file_path)
                                     bytes_freed += size
                                     files_deleted += 1
-                            except:
-                                pass  # Skip files that can't be deleted
-                except:
-                    pass  # Skip directories that can't be accessed
+                            except OSError as e:
+                                logger.debug(f"Suppressed exception deleting temp file: {e}")
+                except OSError as e:
+                    logger.debug(f"Suppressed exception scanning temp dir: {e}")
         
         mb_freed = bytes_freed / (1024 * 1024)
         if files_deleted > 0:
@@ -158,7 +158,8 @@ class CleanupService:
                 result = self.run_as_admin(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', ps_file])
                 os.unlink(ps_file)
                 return result
-            except:
+            except Exception as e:
+                logger.debug(f"Suppressed exception clearing prefetch (admin): {e}")
                 if os.path.exists(ps_file):
                     os.unlink(ps_file)
                 return False, "Administrator privileges required. Please run app as admin."
@@ -170,8 +171,8 @@ class CleanupService:
                         file_path = os.path.join(prefetch_path, file)
                         if os.path.isfile(file_path):
                             os.remove(file_path)
-                    except:
-                        pass
+                    except OSError as e:
+                        logger.debug(f"Suppressed exception deleting prefetch file: {e}")
                 return True, "Prefetch cleared successfully"
             return False, "Prefetch folder not found"
         except Exception as e:
@@ -283,7 +284,8 @@ class CleanupService:
                 result = self.run_as_admin(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', ps_file])
                 os.unlink(ps_file)
                 return result
-            except:
+            except Exception as e:
+                logger.debug(f"Suppressed exception resetting network (admin): {e}")
                 if os.path.exists(ps_file):
                     os.unlink(ps_file)
                 return False, "Administrator privileges required. Please run app as admin."
@@ -377,7 +379,8 @@ class CleanupService:
                 result = self.run_as_admin(['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', ps_file])
                 os.unlink(ps_file)
                 return result
-            except:
+            except Exception as e:
+                logger.debug(f"Suppressed exception clearing update cache (admin): {e}")
                 if os.path.exists(ps_file):
                     os.unlink(ps_file)
                 return False, "Administrator privileges required. Please run app as admin."
@@ -396,14 +399,15 @@ class CleanupService:
             if os.path.exists(softdist_path):
                 try:
                     shutil.rmtree(softdist_path)
-                except:
+                except OSError as e:
+                    logger.debug(f"Suppressed exception removing update cache: {e}")
                     # If rmtree fails, try to delete files individually
                     for root, dirs, files in os.walk(softdist_path):
                         for file in files:
                             try:
                                 os.remove(os.path.join(root, file))
-                            except:
-                                pass
+                            except OSError as e:
+                                logger.debug(f"Suppressed exception deleting update cache file: {e}")
             
             # Restart Windows Update service
             subprocess.run(
@@ -496,8 +500,8 @@ class CleanupService:
                         size = os.path.getsize(file_path)
                         os.remove(file_path)
                         freed += size
-                    except Exception:
-                        pass
+                    except OSError as e:
+                        logger.debug(f"Suppressed exception clearing browser cache file: {e}")
             total_freed += freed
             return freed
 

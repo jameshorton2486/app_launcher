@@ -4,19 +4,13 @@ Manages and organizes downloaded files
 """
 
 import customtkinter as ctk
-import sys
 import os
 import threading
 import tkinter.messagebox as msgbox
 from tkinter import filedialog
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
-from src.theme import COLORS
+from src.theme import COLORS, FONTS
 from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.services.file_service import FileService
 from src.components.file_item import FileItem
@@ -127,40 +121,35 @@ class DownloadsTab(ctk.CTkFrame):
         categories = ['All', 'Code', 'Docs', 'Images', 'Archives', 'Unknown']
         
         for category in categories:
-            btn = ctk.CTkButton(
+            btn = Button3D(
                 filter_frame,
                 text=category,
                 width=80,
                 height=28,
                 font=('Segoe UI', 10),
-                fg_color=COLORS['bg_tertiary'] if category != 'All' else COLORS['accent_primary'],
-                hover_color=COLORS['accent_secondary'],
+                bg_color=BUTTON_COLORS.PRIMARY if category == 'All' else BUTTON_COLORS.SECONDARY,
                 command=lambda c=category: self.filter_by_category(c)
             )
             btn.pack(side='left', padx=5, pady=8)
             self.filter_buttons[category] = btn
         
         # Select All / Deselect All buttons
-        select_all_btn = ctk.CTkButton(
+        select_all_btn = Button3D(
             filter_frame,
             text="Select All",
             width=90,
             height=28,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.select_all
         )
         select_all_btn.pack(side='right', padx=(5, 10), pady=8)
         
-        deselect_all_btn = ctk.CTkButton(
+        deselect_all_btn = Button3D(
             filter_frame,
             text="Deselect All",
             width=90,
             height=28,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.deselect_all
         )
         deselect_all_btn.pack(side='right', padx=(5, 0), pady=8)
@@ -300,9 +289,9 @@ class DownloadsTab(ctk.CTkFrame):
         # Update button colors
         for cat, btn in self.filter_buttons.items():
             if cat == category:
-                btn.configure(fg_color=COLORS['accent_primary'])
+                btn.configure(bg_color=BUTTON_COLORS.PRIMARY)
             else:
-                btn.configure(fg_color=COLORS['bg_tertiary'])
+                btn.configure(bg_color=BUTTON_COLORS.SECONDARY)
         
         self.apply_filters()
         self.refresh_display()
@@ -342,8 +331,8 @@ class DownloadsTab(ctk.CTkFrame):
             # Show empty state
             empty_label = ctk.CTkLabel(
                 self.scrollable_frame,
-                text="No files found.\nConfigure downloads folder in settings.",
-                font=('Segoe UI', 14),
+                text="No files found in downloads folder.\nCheck your downloads path in Settings, or drag files here.",
+                font=(FONTS['family'], FONTS['size_lg']),
                 text_color=COLORS['text_secondary']
             )
             empty_label.pack(expand=True, pady=50)

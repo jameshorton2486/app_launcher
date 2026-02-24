@@ -6,7 +6,6 @@ Add/Edit project dialog with manual entry and drag-drop support
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
-import sys
 import os
 import uuid
 
@@ -19,14 +18,15 @@ except ImportError:
     TkinterDnD = None
     DND_FILES = None
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.components.button_3d import Button3D, BUTTON_COLORS
+try:
+    from src.utils.logger import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
 
 
 class ProjectDialog(ctk.CTkToplevel):
@@ -54,6 +54,13 @@ class ProjectDialog(ctk.CTkToplevel):
         
         self.setup_window()
         self.setup_ui()
+
+        # Focus the first input field
+        self.after(100, lambda: self.name_entry.focus_set())
+
+        # Keyboard shortcuts
+        self.bind("<Return>", lambda e: self.save())
+        self.bind("<Escape>", lambda e: self.cancel())
         
         # If dropped file, auto-detect values
         if dropped_file:
@@ -114,11 +121,12 @@ class ProjectDialog(ctk.CTkToplevel):
         self.path_entry.pack(side='left', fill='x', expand=True, padx=(0, 10))
         if self.project:
             self.path_entry.insert(0, self.project.get('path', ''))
-        browse_path_btn = ctk.CTkButton(
+        browse_path_btn = Button3D(
             path_frame,
             text="Browse",
             width=80,
             height=35,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: self.browse_path(self.path_entry)
         )
         browse_path_btn.pack(side='right')
@@ -132,11 +140,12 @@ class ProjectDialog(ctk.CTkToplevel):
         self.script_entry.pack(side='left', fill='x', expand=True, padx=(0, 10))
         if self.project:
             self.script_entry.insert(0, self.project.get('launch_script', ''))
-        browse_script_btn = ctk.CTkButton(
+        browse_script_btn = Button3D(
             script_frame,
             text="Browse",
             width=80,
             height=35,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: self.browse_script(self.script_entry)
         )
         browse_script_btn.pack(side='right')
@@ -261,8 +270,8 @@ class ProjectDialog(ctk.CTkToplevel):
             try:
                 drop_frame.drop_target_register(DND_FILES)
                 drop_frame.dnd_bind('<<Drop>>', self.on_drop)
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in drag-drop setup: {e}")
         
         # Fallback: Click to browse
         def on_click(event):

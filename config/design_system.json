@@ -62,8 +62,6 @@
     "md": 12,
     "lg": 16,
     "xl": 20,
-    "xxl": 24,
-    "xxxl": 32,
     "2xl": 32,
     "3xl": 48
   },
@@ -74,7 +72,6 @@
     "size_xs": 11,
     "size_sm": 12,
     "size_base": 14,
-    "size_md": 13,
     "size_lg": 15,
     "size_xl": 18,
     "size_xxl": 24,

@@ -4,20 +4,17 @@ CustomTkinter application with tabbed interface
 """
 
 import customtkinter as ctk
-import sys
 import os
 import threading
 import psutil
 import tkinter as tk
 from datetime import datetime
+from pathlib import Path
+import subprocess
+import sys
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
-from src.theme import COLORS, apply_theme
+from src.theme import COLORS, SPACING, apply_theme
 from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.config_manager import ConfigManager
 from src.components.search_bar import SearchBar
@@ -46,7 +43,7 @@ SIDEBAR_ITEM_HEIGHT = 48  # Larger click targets
 class SidebarNavItem(ctk.CTkFrame):
     """Sidebar navigation item with hover and active states."""
 
-    def __init__(self, parent, label: str, icon: str, command, show_indicator: bool = False):
+    def __init__(self, parent, label: str, icon: str, command, show_indicator: bool = False, shortcut: str = ""):
         super().__init__(parent, fg_color='transparent', corner_radius=10, height=SIDEBAR_ITEM_HEIGHT)
         self.label_text = label
         self.icon = icon
@@ -54,6 +51,7 @@ class SidebarNavItem(ctk.CTkFrame):
         self._active = False
         self._collapsed = False
         self._show_indicator = show_indicator
+        self.shortcut_text = shortcut
 
         self.pack_propagate(False)
 
@@ -71,6 +69,15 @@ class SidebarNavItem(ctk.CTkFrame):
             anchor='w'
         )
         self.label.pack(side='left', fill='both', expand=True, padx=20)
+
+        self.shortcut_label = ctk.CTkLabel(
+            self.content,
+            text=self._format_shortcut(),
+            font=('Segoe UI', 9),
+            text_color=COLORS['text_tertiary'],
+            anchor='e'
+        )
+        self.shortcut_label.pack(side='right', padx=(0, 8))
 
         self.indicator = ctk.CTkLabel(
             self.content,
@@ -102,7 +109,7 @@ class SidebarNavItem(ctk.CTkFrame):
         self._active = active
         if active:
             self.left_border.configure(fg_color=COLORS['accent_primary'], width=4)
-            self.content.configure(fg_color=COLORS.get('bg_hover', '#2e2e38'))
+            self.content.configure(fg_color=COLORS['bg_hover'])
             self.label.configure(text_color=COLORS['text_primary'], font=('Segoe UI', 12, 'bold'))
         else:
             self.left_border.configure(fg_color='transparent', width=4)
@@ -112,6 +119,12 @@ class SidebarNavItem(ctk.CTkFrame):
     def set_collapsed(self, collapsed: bool):
         self._collapsed = collapsed
         self.label.configure(text=self._format_label())
+        self.shortcut_label.configure(text=self._format_shortcut())
+
+    def _format_shortcut(self) -> str:
+        if self._collapsed:
+            return ""
+        return self.shortcut_text or ""
 
     def set_indicator(self, level: str):
         if not self._show_indicator:
@@ -139,15 +152,39 @@ class SidebarNavItem(ctk.CTkFrame):
 class AppLauncher(ctk.CTk):
     """Main application window"""
     
-    def __init__(self):
+    def __init__(self, enabled_tabs=None, show_power_tools_button: bool = False,
+                 power_tools_command=None, dashboard_read_only: bool = False,
+                 validate_tools_on_startup: bool = False, window_title: str | None = None,
+                 sidebar_title: str | None = None, show_app_selector: bool | None = None):
         super().__init__()
         
         try:
+            self._all_tabs = ["Dashboard", "Projects", "Downloads", "Maintenance", "Optimization", "Settings"]
+            if enabled_tabs:
+                self._enabled_tabs = [t for t in self._all_tabs if t in enabled_tabs]
+            else:
+                self._enabled_tabs = list(self._all_tabs)
+
+            self._show_power_tools_button = show_power_tools_button
+            self._power_tools_command = power_tools_command
+            self._dashboard_read_only = dashboard_read_only
+            self._validate_tools_on_startup = validate_tools_on_startup
+            self._window_title = window_title
+            self._sidebar_title_text = sidebar_title or "App Launcher"
+            self._sidebar_title_short = "".join(
+                word[0] for word in self._sidebar_title_text.split() if word
+            ) or "AL"
+            self._show_app_selector = show_app_selector
+            self._app_selector_open = False
+
             # Initialize config manager
             self.config_manager = ConfigManager()
             
             # Load settings
             self.settings = self.config_manager.settings
+
+            if self._show_app_selector is None:
+                self._show_app_selector = self.config_manager.get_setting('ui.show_app_selector', True)
             
             # Initialize services
             self.process_service = ProcessService()
@@ -167,7 +204,7 @@ class AppLauncher(ctk.CTk):
             
             # Apply theme (read from config)
             theme_mode = self.config_manager.get_setting('theme.mode', 'dark')
-            accent_color = self.config_manager.get_setting('theme.accent_color', '#6c5ce7')
+            accent_color = self.config_manager.get_setting('theme.accent_color', COLORS.get('accent_primary'))
             apply_theme(self, mode=theme_mode, accent_color=accent_color)
             
             # Configure window
@@ -178,6 +215,9 @@ class AppLauncher(ctk.CTk):
             
             # Setup system integration
             self.setup_system_integration()
+
+            if self._validate_tools_on_startup:
+                self._run_tool_self_check()
             
             # Bind close event
             self.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -195,7 +235,7 @@ class AppLauncher(ctk.CTk):
             width = self.config_manager.get_setting('window.width', 900)
             height = self.config_manager.get_setting('window.height', 650)
             
-            self.title("James's Project Launcher (v2.0)")
+            self.title(self._window_title or "James's Project Launcher (v2.0)")
             self.minsize(700, 500)
             
             # Set window background
@@ -334,9 +374,10 @@ class AppLauncher(ctk.CTk):
         # Status bar at bottom
         self.status_bar = StatusBar(
             self.content_container,
-            on_settings_click=self.open_settings,
+            on_settings_click=self.open_settings if "Settings" in self._enabled_tabs else None,
             on_help_click=self.show_shortcuts_help,
-            on_screenshot_click=self.capture_screenshot
+            on_screenshot_click=self.capture_screenshot,
+            show_settings="Settings" in self._enabled_tabs
         )
         self.status_bar.pack(fill='x', side='bottom', padx=0, pady=0)
 
@@ -348,23 +389,12 @@ class AppLauncher(ctk.CTk):
         self._build_sidebar()
         self._build_views()
         self._build_menu()
-        self.show_view("Dashboard")
-        ToastManager.set_root(self)
+        self._bind_shortcuts()
 
-        # Command palette bindings
-        self.bind_all("<Control-k>", lambda e: self.open_command_palette())
-        self.bind_all("<Control-p>", lambda e: self.open_command_palette())
-        self.bind_all("<Control-1>", lambda e: self.show_view("Dashboard"))
-        self.bind_all("<Control-2>", lambda e: self.show_view("Projects"))
-        self.bind_all("<Control-3>", lambda e: self.show_view("Optimization"))
-        self.bind_all("<Control-4>", lambda e: self.show_view("Maintenance"))
-        self.bind_all("<Control-5>", lambda e: self.show_view("Settings"))
-        self.bind_all("<Control-f>", lambda e: self.focus_search())
-        self.bind_all("<Control-r>", lambda e: self.refresh_current_view())
-        self.bind_all("<Control-Shift-s>", lambda e: self.capture_screenshot())
-        self.bind_all("<F5>", lambda e: self.refresh_dashboard())
-        self.bind_all("<F1>", lambda e: self.open_help_manual())
-        self.bind_all("<Escape>", lambda e: self.handle_escape())
+        initial_view = "Dashboard" if "Dashboard" in self._enabled_tabs else (self._enabled_tabs[0] if self._enabled_tabs else None)
+        if initial_view:
+            self.show_view(initial_view)
+        ToastManager.set_root(self)
 
         # Update status
         self.status_bar.set_status("Ready")
@@ -372,31 +402,29 @@ class AppLauncher(ctk.CTk):
         # Start git status monitoring for status bar
         self.start_git_status_monitoring()
 
+        if self._show_app_selector:
+            self.after(250, self._show_app_selector_dialog)
+
     def _build_sidebar(self):
-        try:
-            from src.utils.theme_extended import SPACING
-            _pad = getattr(SPACING, 'md', 12)
-        except ImportError:
-            _pad = 12
+        _pad = SPACING.get("md", 12)
         header_frame = ctk.CTkFrame(self.sidebar, fg_color=COLORS['bg_primary'], corner_radius=0)
         header_frame.pack(fill='x', padx=_pad, pady=(_pad, _pad))
 
         self.sidebar_title = ctk.CTkLabel(
             header_frame,
-            text="App Launcher",
+            text=self._sidebar_title_text,
             font=('Segoe UI', 14, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         )
         self.sidebar_title.pack(side='left', fill='x', expand=True)
 
-        self.sidebar_toggle = ctk.CTkButton(
+        self.sidebar_toggle = Button3D(
             header_frame,
             text="☰",
             width=32,
             height=28,
-            fg_color=COLORS['bg_secondary'],
-            hover_color=COLORS['bg_hover'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.toggle_sidebar
         )
         self.sidebar_toggle.pack(side='right')
@@ -407,18 +435,24 @@ class AppLauncher(ctk.CTk):
         nav_items = [
             ("Dashboard", "🏠"),
             ("Projects", "🚀"),
-            ("Optimization", ""),
+            ("Downloads", "⬇️"),
             ("Maintenance", "🛠"),
-            ("Settings", ""),
+            ("Optimization", "⚡"),
+            ("Settings", "⚙"),
         ]
+        shortcuts = self._get_tab_shortcuts()
 
         for name, icon in nav_items:
+            if name not in self._enabled_tabs:
+                continue
+            shortcut = shortcuts.get(name, "")
             item = SidebarNavItem(
                 nav_frame,
                 label=name,
                 icon=icon,
                 command=lambda n=name: self.show_view(n),
-                show_indicator=(name == "Dashboard")
+                show_indicator=(name == "Dashboard"),
+                shortcut=shortcut
             )
             item.pack(fill='x', pady=4)
             self._nav_items[name] = item
@@ -438,13 +472,12 @@ class AppLauncher(ctk.CTk):
         )
         self.ram_label.pack(side='left', fill='x', expand=True)
 
-        shortcuts_btn = ctk.CTkButton(
+        shortcuts_btn = Button3D(
             footer_top,
             text="?",
             width=28,
             height=24,
-            fg_color=COLORS['bg_secondary'],
-            hover_color=COLORS['bg_hover'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.show_shortcuts_help
         )
         shortcuts_btn.pack(side='right')
@@ -458,65 +491,78 @@ class AppLauncher(ctk.CTk):
         )
         self.version_label.pack(fill='x', pady=(6, 0))
 
-        help_btn = ctk.CTkButton(
+        help_btn = Button3D(
             footer_frame,
             text="📖 Help Manual",
             height=28,
-            fg_color=COLORS['bg_secondary'],
-            hover_color=COLORS['bg_hover'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.open_help_manual
         )
         help_btn.pack(fill='x', pady=(10, 0))
+
+        if self._show_power_tools_button:
+            power_tools_btn = Button3D(
+                footer_frame,
+                text="🧰 Open Power Tools",
+                height=32,
+                bg_color=BUTTON_COLORS.SECONDARY,
+                command=self._open_power_tools
+            )
+            power_tools_btn.pack(fill='x', pady=(10, 0))
 
         self.after(1000, self._update_ram_usage)
 
     def _build_views(self):
         self.views = {}
 
-        dashboard_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.dashboard_tab = DashboardTab(
-            dashboard_view,
-            self.config_manager,
-            process_service=self.process_service,
-            status_bar=self.status_bar,
-            on_open_downloads=lambda: self.show_view("Downloads"),
-            on_health_update=self._handle_health_update
-        )
-        self.dashboard_tab.pack(fill='both', expand=True)
-        self._dashboard_initialized = True
+        if "Dashboard" in self._enabled_tabs:
+            dashboard_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.dashboard_tab = DashboardTab(
+                dashboard_view,
+                self.config_manager,
+                process_service=self.process_service,
+                status_bar=self.status_bar,
+                on_open_downloads=(lambda: self.show_view('Downloads')) if "Downloads" in self._enabled_tabs and not self._dashboard_read_only else None,
+                on_health_update=self._handle_health_update,
+                read_only=self._dashboard_read_only
+            )
+            self.dashboard_tab.pack(fill='both', expand=True)
+            self.views["Dashboard"] = dashboard_view
+            self._dashboard_initialized = True
 
-        downloads_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.downloads_tab = DownloadsTab(
-            downloads_view,
-            self.config_manager,
-            status_bar=self.status_bar
-        )
-        self.downloads_tab.pack(fill='both', expand=True)
+        if "Downloads" in self._enabled_tabs:
+            downloads_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.downloads_tab = DownloadsTab(
+                downloads_view,
+                self.config_manager,
+                status_bar=self.status_bar
+            )
+            self.downloads_tab.pack(fill='both', expand=True)
+            self.views["Downloads"] = downloads_view
 
-        projects_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.projects_tab = ProjectsTab(projects_view, self.config_manager)
-        self.projects_tab.pack(fill='both', expand=True)
+        if "Projects" in self._enabled_tabs:
+            projects_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.projects_tab = ProjectsTab(projects_view, self.config_manager)
+            self.projects_tab.pack(fill='both', expand=True)
+            self.views["Projects"] = projects_view
 
-        optimization_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.optimization_tab = OptimizationTab(optimization_view, self.config_manager)
-        self.optimization_tab.pack(fill='both', expand=True)
+        if "Optimization" in self._enabled_tabs:
+            optimization_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.optimization_tab = OptimizationTab(optimization_view, self.config_manager)
+            self.optimization_tab.pack(fill='both', expand=True)
+            self.views["Optimization"] = optimization_view
 
-        maintenance_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.maintenance_tab = MaintenanceTab(maintenance_view, self.config_manager)
-        self.maintenance_tab.pack(fill='both', expand=True)
+        if "Maintenance" in self._enabled_tabs:
+            maintenance_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.maintenance_tab = MaintenanceTab(maintenance_view, self.config_manager)
+            self.maintenance_tab.pack(fill='both', expand=True)
+            self.views["Maintenance"] = maintenance_view
 
-        settings_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
-        self.settings_tab = SettingsTab(settings_view, self.config_manager, on_save=self.on_settings_saved)
-        self.settings_tab.pack(fill='both', expand=True, padx=10, pady=10)
-
-        self.views = {
-            "Dashboard": dashboard_view,
-            "Downloads": downloads_view,
-            "Projects": projects_view,
-            "Optimization": optimization_view,
-            "Maintenance": maintenance_view,
-            "Settings": settings_view,
-        }
+        if "Settings" in self._enabled_tabs:
+            settings_view = ctk.CTkFrame(self.content_frame, fg_color=COLORS['bg_primary'], corner_radius=0)
+            self.settings_tab = SettingsTab(settings_view, self.config_manager, on_save=self.on_settings_saved)
+            self.settings_tab.pack(fill='both', expand=True)
+            self.views["Settings"] = settings_view
 
     def show_view(self, view_name: str):
         if view_name not in self.views:
@@ -542,7 +588,9 @@ class AppLauncher(ctk.CTk):
         self.sidebar.configure(width=width)
         self.sidebar.pack_propagate(False)
 
-        self.sidebar_title.configure(text="App Launcher" if self._sidebar_expanded else "AL")
+        self.sidebar_title.configure(
+            text=self._sidebar_title_text if self._sidebar_expanded else self._sidebar_title_short
+        )
 
         for item in self._nav_items.values():
             item.set_collapsed(not self._sidebar_expanded)
@@ -579,7 +627,7 @@ class AppLauncher(ctk.CTk):
             self.deiconify()
             self.lift()
             self.focus_force()
-            self.show_view("Settings")
+            self.show_view('Settings')
         except Exception as e:
             logger.error(f"Error opening settings: {e}", exc_info=True)
             self.status_bar.set_status("Error opening settings")
@@ -624,14 +672,14 @@ class AppLauncher(ctk.CTk):
     def open_command_palette(self):
         """Open command palette modal"""
         try:
-            CommandPalette(self, self.config_manager)
+            CommandPalette(self, self.config_manager, allowed_tabs=self._enabled_tabs)
         except Exception as e:
             logger.error(f"Error opening command palette: {e}", exc_info=True)
 
     def open_help_manual(self):
         """Open help manual modal"""
         try:
-            HelpManual(self)
+            HelpManual(self, allowed_tabs=self._enabled_tabs)
         except Exception as e:
             logger.error(f"Error opening help manual: {e}", exc_info=True)
 
@@ -643,6 +691,12 @@ class AppLauncher(ctk.CTk):
         dialog.configure(fg_color=COLORS['bg_primary'])
         dialog.transient(self)
         dialog.grab_set()
+        dialog.bind("<Escape>", lambda e: dialog.destroy())
+
+        dialog.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() - 520) // 2
+        y = self.winfo_y() + (self.winfo_height() - 360) // 2
+        dialog.geometry(f"520x360+{x}+{y}")
 
         frame = ctk.CTkFrame(dialog, fg_color=COLORS['bg_primary'])
         frame.pack(fill='both', expand=True, padx=24, pady=24)
@@ -655,15 +709,23 @@ class AppLauncher(ctk.CTk):
         )
         title.pack(anchor='w', pady=(0, 12))
 
+        shortcuts = self._get_tab_shortcuts()
+        navigation_lines = [f"{key:<11} {tab}" for tab, key in shortcuts.items()]
+        if not navigation_lines:
+            navigation_lines = ["(No tabs available)"]
+        navigation_text = "\n".join(navigation_lines)
+
         body = (
             "Navigation\n"
-            "Ctrl+1-5     Switch tabs\n"
+            "Ctrl+1-6     Switch tabs\n"
+            f"{navigation_text}\n"
             "Ctrl+K       Command Palette\n"
             "Escape       Close dialogs\n\n"
             "Actions\n"
             "Ctrl+R       Refresh\n"
             "F5           Refresh Dashboard\n"
             "Ctrl+F       Focus search\n"
+            "F1           Help Manual\n"
             "Ctrl+Shift+S Capture screenshot\n\n"
             "Global\n"
             "Win+Shift+L  Show/Hide app"
@@ -686,18 +748,141 @@ class AppLauncher(ctk.CTk):
             command=dialog.destroy
         ).pack(pady=20)
 
+    def _get_tab_shortcuts(self) -> dict:
+        shortcuts = {}
+        tab_order = self._all_tabs
+        for index, tab in enumerate(tab_order, start=1):
+            if tab in self._enabled_tabs:
+                shortcuts[tab] = f"Ctrl+{index}"
+        return shortcuts
+
+    def _bind_shortcuts(self):
+        self.bind_all("<Control-k>", lambda event=None: self.open_command_palette())
+        self.bind_all("<Control-K>", lambda event=None: self.open_command_palette())
+        self.bind_all("<Control-f>", lambda event=None: self.focus_search())
+        self.bind_all("<Control-F>", lambda event=None: self.focus_search())
+        self.bind_all("<Control-r>", lambda event=None: self.refresh_current_view())
+        self.bind_all("<Control-R>", lambda event=None: self.refresh_current_view())
+        self.bind_all("<Control-Shift-s>", lambda event=None: self.capture_screenshot())
+        self.bind_all("<Control-Shift-S>", lambda event=None: self.capture_screenshot())
+        self.bind_all("<F5>", lambda event=None: self.refresh_dashboard())
+        self.bind_all("<F1>", lambda event=None: self.open_help_manual())
+        self.bind_all("<Escape>", lambda event=None: self.handle_escape())
+
+        if "Dashboard" in self._enabled_tabs:
+            self.bind_all("<Control-1>", lambda event=None: self.show_view('Dashboard'))
+        if "Projects" in self._enabled_tabs:
+            self.bind_all("<Control-2>", lambda event=None: self.show_view('Projects'))
+        if "Downloads" in self._enabled_tabs:
+            self.bind_all("<Control-3>", lambda event=None: self.show_view('Downloads'))
+        if "Maintenance" in self._enabled_tabs:
+            self.bind_all("<Control-4>", lambda event=None: self.show_view('Maintenance'))
+        if "Optimization" in self._enabled_tabs:
+            self.bind_all("<Control-5>", lambda event=None: self.show_view('Optimization'))
+        if "Settings" in self._enabled_tabs:
+            self.bind_all("<Control-6>", lambda event=None: self.show_view('Settings'))
+
+    def _open_power_tools(self):
+        try:
+            if callable(self._power_tools_command):
+                self._power_tools_command()
+                return
+            if isinstance(self._power_tools_command, (list, tuple)):
+                subprocess.Popen(list(self._power_tools_command), cwd=str(Path.cwd()))
+                return
+            if isinstance(self._power_tools_command, str) and self._power_tools_command.strip():
+                subprocess.Popen(self._power_tools_command, cwd=str(Path.cwd()), shell=True)
+                return
+            raise ValueError("Power tools launch command not configured")
+        except Exception as e:
+            logger.error(f"Failed to launch Power Tools: {e}", exc_info=True)
+            if ToastManager:
+                ToastManager.show_error("Power Tools", "Failed to launch Power Tools.")
+            self.status_bar.set_status("Failed to launch Power Tools")
+
+    def _run_tool_self_check(self):
+        try:
+            from src.utils.constants import TOOLS_FILE
+            from src.utils.tool_registry import ToolRegistry
+            registry = ToolRegistry()
+            registry.load_tools(TOOLS_FILE)
+            issues = registry.validate_tools(self.config_manager)
+            if issues:
+                logger.warning("Tool self-check found %s issues", len(issues))
+            else:
+                logger.info("Tool self-check passed")
+        except Exception as e:
+            logger.warning(f"Tool self-check failed: {e}", exc_info=True)
+
+    def _show_app_selector_dialog(self):
+        if self._app_selector_open:
+            return
+        self._app_selector_open = True
+
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Choose App")
+        dialog.geometry("520x280")
+        dialog.configure(fg_color=COLORS['bg_primary'])
+        dialog.transient(self)
+        dialog.grab_set()
+
+        frame = ctk.CTkFrame(dialog, fg_color=COLORS['bg_primary'])
+        frame.pack(fill='both', expand=True, padx=24, pady=24)
+
+        title = ctk.CTkLabel(
+            frame,
+            text="Choose your workspace",
+            font=('Segoe UI', 18, 'bold'),
+            text_color=COLORS['text_primary']
+        )
+        title.pack(anchor='w', pady=(0, 8))
+
+        subtitle = ctk.CTkLabel(
+            frame,
+            text="Launch projects here, or open the Power Tools for advanced system actions.",
+            font=('Segoe UI', 12),
+            text_color=COLORS['text_secondary'],
+            justify='left',
+            anchor='w',
+            wraplength=440
+        )
+        subtitle.pack(anchor='w', pady=(0, 16))
+
+        actions = ctk.CTkFrame(frame, fg_color='transparent')
+        actions.pack(fill='x', pady=(8, 0))
+
+        Button3D(
+            actions,
+            text="Continue in App Launcher",
+            width=220,
+            height=36,
+            bg_color=BUTTON_COLORS.PRIMARY,
+            command=lambda: (dialog.destroy(), setattr(self, "_app_selector_open", False))
+        ).pack(side='left', padx=(0, 12))
+
+        Button3D(
+            actions,
+            text="Open Power Tools",
+            width=180,
+            height=36,
+            bg_color=BUTTON_COLORS.SECONDARY,
+            command=lambda: (dialog.destroy(), setattr(self, "_app_selector_open", False), self._open_power_tools())
+        ).pack(side='left')
+
+        dialog.protocol("WM_DELETE_WINDOW", lambda: (dialog.destroy(), setattr(self, "_app_selector_open", False)))
+
     def focus_search(self):
         try:
             self.search_bar.search_entry.focus_set()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Suppressed exception in focus_search: {e}")
 
     def refresh_dashboard(self):
         if hasattr(self, 'dashboard_tab') and self.dashboard_tab:
             try:
                 self.dashboard_tab._refresh_system_stats()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in refresh_dashboard: {e}")
 
     def refresh_current_view(self):
         if self._current_view == "Downloads" and self.downloads_tab:
@@ -837,7 +1022,10 @@ class AppLauncher(ctk.CTk):
                 from src.services.git_service import GitService
                 git_service = GitService()
                 projects = self.config_manager.load_projects()
-                
+                if not projects:
+                    self.status_bar.set_git_status("No projects")
+                    return
+
                 repos_needing_attention = 0
                 for project in projects:
                     repo_path = project.get('path', '')
@@ -849,7 +1037,7 @@ class AppLauncher(ctk.CTk):
                 if repos_needing_attention > 0:
                     self.status_bar.set_git_status(f"{repos_needing_attention} repos need attention")
                 else:
-                    self.status_bar.set_git_status("")
+                    self.status_bar.set_git_status("All clean")
             except Exception as e:
                 logger.debug(f"Error checking git status: {e}")
         
@@ -861,8 +1049,8 @@ class AppLauncher(ctk.CTk):
                 time.sleep(30)  # Check every 30 seconds
                 try:
                     self.after(0, check_git_status)
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Suppressed exception in git status scheduler: {e}")
         
         # Initial check
         self.after(2000, check_git_status)
@@ -986,7 +1174,10 @@ class AppLauncher(ctk.CTk):
                 self.config_manager,
                 self.process_service,
                 self.cleanup_service,
-                on_settings=self.open_settings
+                on_settings=self.open_settings,
+                include_utilities=not self._dashboard_read_only,
+                app_label=self._sidebar_title_text,
+                tray_title=self._window_title or "James's Project Launcher"
             )
             if self.tray_icon:
                 print("[INFO] System tray icon started")
@@ -1012,7 +1203,7 @@ class AppLauncher(ctk.CTk):
         elif attention >= 1:
             level = "yellow"
 
-        dashboard_item = self._nav_items.get("Dashboard")
+        dashboard_item = self._nav_items.get('Dashboard')
         if dashboard_item:
             dashboard_item.set_indicator(level)
 
@@ -1025,8 +1216,8 @@ class AppLauncher(ctk.CTk):
                             "System health check",
                             f"{attention} items need attention. View Dashboard."
                         )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Suppressed exception in health toast: {e}")
                 self.after(200, lambda: self._show_health_notification(result))
             self._startup_health_notified = True
 
@@ -1077,17 +1268,18 @@ class AppLauncher(ctk.CTk):
             width=140,
             height=36,
             bg_color=BUTTON_COLORS.SECONDARY,
-            command=lambda: (dialog.destroy(), self.show_view("Dashboard"))
+            command=lambda: (dialog.destroy(), self.show_view('Dashboard'))
         ).pack(side='left')
 
-        Button3D(
-            actions,
-            text="Run Quick Cleanup",
-            width=160,
-            height=36,
-            bg_color=BUTTON_COLORS.PRIMARY,
-            command=lambda: (dialog.destroy(), self.dashboard_tab._run_quick_cleanup())
-        ).pack(side='left', padx=8)
+        if not self._dashboard_read_only:
+            Button3D(
+                actions,
+                text="Run Quick Cleanup",
+                width=160,
+                height=36,
+                bg_color=BUTTON_COLORS.PRIMARY,
+                command=lambda: (dialog.destroy(), self.dashboard_tab._run_quick_cleanup())
+            ).pack(side='left', padx=8)
 
         Button3D(
             actions,

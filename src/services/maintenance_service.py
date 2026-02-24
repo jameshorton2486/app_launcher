@@ -7,7 +7,6 @@ import subprocess
 import ctypes
 import threading
 import winreg
-import os
 from typing import Tuple, Any, Optional, Callable, List
 
 # Try to import logger

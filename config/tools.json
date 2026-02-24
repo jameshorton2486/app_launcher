@@ -224,7 +224,7 @@
         {
           "id": "optimize_drives",
           "title": "Optimize Drives",
-          "icon": "",
+          "icon": "💽",
           "description": "Run TRIM for SSD or defragmentation for HDD",
           "service": "cleanup",
           "method": "optimize_drive",
@@ -290,7 +290,8 @@
           "risk_level": "medium",
           "recommended_frequency": "as_needed",
           "notes": "Restart recommended after running this tool.",
-          "when_to_use": "When network connectivity is broken or unstable."
+          "when_to_use": "When network connectivity is broken or unstable.",
+          "cooldown_days": 7
         },
         {
           "id": "release_renew_ip",
@@ -402,7 +403,8 @@
           "risk_level": "medium",
           "recommended_frequency": "as_needed",
           "notes": "Runs at next restart and can take hours on large drives.",
-          "when_to_use": "When you suspect disk errors or see file corruption warnings."
+          "when_to_use": "When you suspect disk errors or see file corruption warnings.",
+          "cooldown_days": 30
         },
         {
           "id": "reset_windows_update",
@@ -440,7 +442,7 @@
           "title": "Disable Telemetry",
           "icon": "🔒",
           "description": "Reduce Windows data collection to minimum allowed level",
-          "service": "optimization",
+          "service": "maintenance",
           "method": "disable_telemetry",
           "requires_admin": true,
           "tags": [
@@ -453,14 +455,15 @@
           "risk_level": "medium",
           "recommended_frequency": "once",
           "notes": "May affect some Microsoft services that rely on diagnostics.",
-          "when_to_use": "When you want to minimize data collection."
+          "when_to_use": "When you want to minimize data collection.",
+          "cooldown_days": 90
         },
         {
           "id": "disable_activity_history",
           "title": "Disable Activity History",
           "icon": "📜",
           "description": "Stop activity tracking and timeline sync",
-          "service": "optimization",
+          "service": "maintenance",
           "method": "disable_activity_history",
           "requires_admin": false,
           "tags": [
@@ -472,14 +475,15 @@
           "risk_level": "medium",
           "recommended_frequency": "once",
           "notes": "May affect Timeline and cross-device activity sync.",
-          "when_to_use": "When you prefer not to keep activity history."
+          "when_to_use": "When you prefer not to keep activity history.",
+          "cooldown_days": 90
         },
         {
           "id": "disable_advertising_id",
           "title": "Disable Advertising ID",
           "icon": "🚫",
           "description": "Prevent personalized ads tracking",
-          "service": "optimization",
+          "service": "maintenance",
           "method": "disable_advertising_id",
           "requires_admin": false,
           "tags": [
@@ -491,14 +495,15 @@
           "risk_level": "medium",
           "recommended_frequency": "once",
           "notes": "May affect personalized experiences in some apps.",
-          "when_to_use": "When you want less ad tracking."
+          "when_to_use": "When you want less ad tracking.",
+          "cooldown_days": 90
         },
         {
           "id": "disable_cortana",
           "title": "Disable Cortana",
           "icon": "🎤",
           "description": "Turn off Cortana assistant and remove background process",
-          "service": "optimization",
+          "service": "maintenance",
           "method": "disable_cortana",
           "requires_admin": false,
           "tags": [
@@ -511,7 +516,8 @@
           "risk_level": "medium",
           "recommended_frequency": "once",
           "notes": "May affect voice assistant features and some Microsoft services.",
-          "when_to_use": "When you do not use Cortana and want fewer background tasks."
+          "when_to_use": "When you do not use Cortana and want fewer background tasks.",
+          "cooldown_days": 90
         }
       ]
     },
@@ -525,7 +531,7 @@
         {
           "id": "disable_sysmain",
           "title": "Disable SysMain",
-          "icon": "",
+          "icon": "⏹",
           "description": "Stop SysMain service and RAM preloading (recommended for SSD)",
           "service": "optimization",
           "method": "disable_sysmain",
@@ -631,7 +637,7 @@
         {
           "id": "disable_transparency",
           "title": "Disable Transparency",
-          "icon": "",
+          "icon": "🪟",
           "description": "Turn off Mica/Acrylic effects to reduce GPU load",
           "service": "optimization",
           "method": "disable_transparency",
@@ -919,7 +925,8 @@
           "risk_level": "high",
           "recommended_frequency": "once",
           "notes": "SECURITY: Reduces protection against kernel-level malware.",
-          "when_to_use": "Only on dedicated gaming PCs where performance is the priority."
+          "when_to_use": "Only on dedicated gaming PCs where performance is the priority.",
+          "cooldown_days": 90
         },
         {
           "id": "enable_vbs",
@@ -939,7 +946,8 @@
           "detailed_description": "Re-enables Virtualization-Based Security to restore kernel protections. This improves security but may slightly reduce gaming performance.",
           "risk_level": "safe",
           "recommended_frequency": "once",
-          "when_to_use": "When you want to restore Windows security protections."
+          "when_to_use": "When you want to restore Windows security protections.",
+          "cooldown_days": 90
         }
       ]
     },
@@ -953,7 +961,7 @@
         {
           "id": "balanced_plan",
           "title": "Balanced",
-          "icon": "",
+          "icon": "⚖",
           "description": "Standard power plan - balances performance and energy",
           "service": "optimization",
           "method": "set_power_plan",
@@ -975,7 +983,7 @@
         {
           "id": "high_performance_plan",
           "title": "High Performance",
-          "icon": "",
+          "icon": "⚡",
           "description": "Maximum CPU performance for desktops and gaming",
           "service": "optimization",
           "method": "set_power_plan",
@@ -1046,29 +1054,6 @@
       "tab": "maintenance",
       "tools": [
         {
-          "id": "ccleaner",
-          "title": "CCleaner",
-          "icon": "🧽",
-          "description": "Comprehensive system cleaning utility",
-          "service": "cleanup",
-          "method": "launch_ccleaner",
-          "method_args": [
-            "$config_manager"
-          ],
-          "requires_admin": false,
-          "external": true,
-          "tags": [
-            "external",
-            "cleanup"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches CCleaner if installed. This gives you access to deep cleaning options outside the app.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When you prefer using CCleaner for cleanup."
-        },
-        {
           "id": "bleachbit",
           "title": "BleachBit",
           "icon": "🧹",
@@ -1092,30 +1077,6 @@
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
           "when_to_use": "When you want a privacy-focused cleaner."
-        },
-        {
-          "id": "wise_memory",
-          "title": "Wise Memory Cleaner",
-          "icon": "🧠",
-          "description": "Aggressive RAM optimization utility",
-          "service": "cleanup",
-          "method": "launch_wise_memory_cleaner",
-          "method_args": [
-            "$config_manager"
-          ],
-          "requires_admin": false,
-          "external": true,
-          "download_url": "https://www.wisecleaner.com/wise-memory-optimizer.html",
-          "tags": [
-            "external",
-            "memory"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches Wise Memory Cleaner to aggressively free RAM. This is an external tool with its own controls.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When you want third-party RAM optimization."
         },
         {
           "id": "treesize",
@@ -1239,30 +1200,6 @@
           "when_to_use": "When you need detailed hardware information."
         },
         {
-          "id": "cpuz",
-          "title": "CPU-Z",
-          "icon": "📋",
-          "description": "Detailed system information utility",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": [
-            "cpuz"
-          ],
-          "requires_admin": false,
-          "external": true,
-          "download_url": "https://www.cpuid.com/softwares/cpu-z.html",
-          "tags": [
-            "external",
-            "info"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches CPU-Z for detailed CPU and system information. This is a read-only diagnostic utility.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When you want detailed CPU or hardware info."
-        },
-        {
           "id": "autoruns",
           "title": "Autoruns",
           "icon": "🚀",
@@ -1290,7 +1227,7 @@
         {
           "id": "process_lasso",
           "title": "Process Lasso",
-          "icon": "",
+          "icon": "🎛",
           "description": "Process priority and CPU affinity manager",
           "service": "external",
           "method": "launch_tool",

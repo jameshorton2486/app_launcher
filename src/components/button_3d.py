@@ -6,28 +6,10 @@ Implements raised buttons with shadow effects and visual state feedback.
 import customtkinter as ctk
 from typing import Optional, Tuple, Callable, Dict
 
-# Add parent directory to path for imports
-import sys
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-
+from src.theme import ButtonColors, COLORS
 try:
-    from src.utils.theme_extended import ButtonColors
     from src.utils.animation import TIMING, HoverDebouncer
 except ImportError:
-    ButtonColors = type('ButtonColors', (), {
-        'PRIMARY': '#1DB954',
-        'SECONDARY': '#4b5563',
-        'DANGER': '#ef4444',
-        'WARNING': '#f59e0b',
-        'INFO': '#3b82f6',
-        'SUCCESS': '#22c55e',
-        'PURPLE': '#8b5cf6',
-        'TEAL': '#14b8a6',
-    })
     TIMING = type('TIMING', (), {'HOVER_DELAY': 50})()
     HoverDebouncer = None
 
@@ -48,7 +30,7 @@ class Button3D(ctk.CTkFrame):
         parent,
         text: str = "",
         icon: Optional[ctk.CTkImage] = None,
-        bg_color: str = "#1DB954",
+        bg_color: str = ButtonColors.PRIMARY,
         text_color: Optional[str] = None,
         width: int = 140,
         height: int = 38,
@@ -153,7 +135,7 @@ class Button3D(ctk.CTkFrame):
     @staticmethod
     def _calc_text_color(bg_color: str) -> str:
         """Return white or black text based on background luminance."""
-        return "#ffffff" if Button3D._calc_luminance(bg_color) < 0.5 else "#1a1a1a"
+        return COLORS["text_primary"] if Button3D._calc_luminance(bg_color) < 0.5 else COLORS["text_inverse"]
 
     @staticmethod
     def _adjust_brightness(hex_color: str, factor: float) -> str:

@@ -5,8 +5,6 @@ Enhanced with color-coded states and visual hierarchy.
 """
 
 import customtkinter as ctk
-import sys
-import os
 import threading
 import time
 import queue
@@ -19,43 +17,41 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
+try:
+    from src.utils.logger import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.NullHandler())
 
 # Design tokens for status bar
-try:
-    from src.utils.theme_extended import THEME, SPACING
-    _BG = THEME.get("panel", COLORS.get("bg_secondary", "#161a22"))
-    _BORDER = THEME.get("border", COLORS.get("border", "#2a3142"))
-    _PADX = getattr(SPACING, 'md', 12)
-    _PADY = getattr(SPACING, 'sm', 8)
-    _HEIGHT = 40  # Vertical padding — visually separated
-except ImportError:
-    _BG = COLORS.get("bg_secondary", "#1e1e24")
-    _BORDER = COLORS.get("border", "#3f3f46")
-    _PADX, _PADY = 12, 8
-    _HEIGHT = 38
+from src.theme import SPACING
+
+_BG = COLORS.get("bg_panel", COLORS["bg_secondary"])
+_BORDER = COLORS.get("border", COLORS.get("border_default", COLORS["border_default"]))
+_PADX = SPACING.get("md", 12)
+_PADY = SPACING.get("sm", 8)
+_HEIGHT = 40  # Vertical padding — visually separated
 
 
 class StatusType(Enum):
     """Status types with associated colors and indicators."""
-    READY = ("ready", "#6b7280", "●")
-    INFO = ("info", "#3b82f6", "●")
-    SUCCESS = ("success", "#22c55e", "●")
-    WARNING = ("warning", "#f59e0b", "●")
-    ERROR = ("error", "#ef4444", "●")
-    LOADING = ("loading", "#a0a6b8", "◌")
+    READY = ("ready", COLORS["text_tertiary"], "●")
+    INFO = ("info", COLORS["info"], "●")
+    SUCCESS = ("success", COLORS["success"], "●")
+    WARNING = ("warning", COLORS["warning"], "●")
+    ERROR = ("error", COLORS["error"], "●")
+    LOADING = ("loading", COLORS["text_secondary"], "◌")
 
 
 class StatusBar(ctk.CTkFrame):
     """Status bar — vertical padding, visual separation, muted severity colors."""
     
-    def __init__(self, parent, on_settings_click=None, on_help_click=None, on_screenshot_click=None):
+    def __init__(self, parent, on_settings_click=None, on_help_click=None, on_screenshot_click=None,
+                 show_settings: bool = True, show_help: bool = True):
         super().__init__(parent, fg_color=_BG, corner_radius=0, height=_HEIGHT, border_width=0)
         self.pack_propagate(False)
         
@@ -65,6 +61,8 @@ class StatusBar(ctk.CTkFrame):
         self.on_settings_click = on_settings_click
         self.on_help_click = on_help_click
         self.on_screenshot_click = on_screenshot_click
+        self.show_settings = show_settings
+        self.show_help = show_help
         self._ram_queue = queue.Queue()  # Thread-safe: worker puts, main thread polls
         
         self.setup_ui()
@@ -114,53 +112,52 @@ class StatusBar(ctk.CTkFrame):
         
         # Right: Screenshot button (capture full screen)
         if self.on_screenshot_click:
-            self.screenshot_btn = ctk.CTkButton(
+            self.screenshot_btn = Button3D(
                 self,
                 text="📷",
                 width=30,
                 height=25,
                 font=('Segoe UI', 12),
-                fg_color='transparent',
-                hover_color=COLORS['bg_tertiary'],
+                bg_color=BUTTON_COLORS.SECONDARY,
                 command=self._on_screenshot_click
             )
             self.screenshot_btn.pack(side='right', padx=(4, 0), pady=4)
             separator_screenshot = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
             separator_screenshot.pack(side='right', fill='y', padx=4, pady=4)
 
-        # Right: Help button
-        self.help_btn = ctk.CTkButton(
-            self,
-            text="?",
-            width=30,
-            height=25,
-            font=('Segoe UI', 12),
-            fg_color='transparent',
-            hover_color=COLORS['bg_tertiary'],
-            command=self._on_help_click
-        )
-        self.help_btn.pack(side='right', padx=(4, 0), pady=4)
+        if self.show_help:
+            # Right: Help button
+            self.help_btn = Button3D(
+                self,
+                text="?",
+                width=30,
+                height=25,
+                font=('Segoe UI', 12),
+                bg_color=BUTTON_COLORS.SECONDARY,
+                command=self._on_help_click
+            )
+            self.help_btn.pack(side='right', padx=(4, 0), pady=4)
 
-        # Separator before help
-        separator_help = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator_help.pack(side='right', fill='y', padx=4, pady=4)
+            # Separator before help
+            separator_help = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
+            separator_help.pack(side='right', fill='y', padx=4, pady=4)
 
-        # Right: Settings button (gear icon)
-        self.settings_btn = ctk.CTkButton(
-            self,
-            text="⚙",
-            width=30,
-            height=25,
-            font=('Segoe UI', 12),
-            fg_color='transparent',
-            hover_color=COLORS['bg_tertiary'],
-            command=self._on_settings_click
-        )
-        self.settings_btn.pack(side='right', padx=(4, 4), pady=4)
-        
-        # Separator before settings
-        separator3 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
-        separator3.pack(side='right', fill='y', padx=4, pady=4)
+        if self.show_settings:
+            # Right: Settings button (gear icon)
+            self.settings_btn = Button3D(
+                self,
+                text="⚙",
+                width=30,
+                height=25,
+                font=('Segoe UI', 12),
+                bg_color=BUTTON_COLORS.SECONDARY,
+                command=self._on_settings_click
+            )
+            self.settings_btn.pack(side='right', padx=(4, 4), pady=4)
+
+            # Separator before settings
+            separator3 = ctk.CTkFrame(self, width=1, fg_color=COLORS['border'])
+            separator3.pack(side='right', fill='y', padx=4, pady=4)
         
         # Right: RAM usage label
         self.ram_label = ctk.CTkLabel(
@@ -211,12 +208,12 @@ class StatusBar(ctk.CTkFrame):
             _, color, _ = status_type.value
         else:
             color_map = {
-                "info": COLORS.get("info", "#3b82f6"),
-                "success": COLORS.get("success", "#22c55e"),
-                "warning": COLORS.get("warning", "#f59e0b"),
-                "error": COLORS.get("error", "#ef4444"),
-                "ready": COLORS.get("text_tertiary", "#6b7280"),
-                "loading": COLORS.get("text_secondary", "#a0a6b8"),
+                "info": COLORS["info"],
+                "success": COLORS["success"],
+                "warning": COLORS["warning"],
+                "error": COLORS["error"],
+                "ready": COLORS["text_tertiary"],
+                "loading": COLORS["text_secondary"],
             }
             color = color_map.get(status_type, color_map["info"])
         if hasattr(self, '_indicator'):
@@ -226,7 +223,10 @@ class StatusBar(ctk.CTkFrame):
         """Set git status text"""
         self.git_status = text
         if text:
-            self.git_label.configure(text=f"Git: {text}")
+            if text.strip().lower() == "no projects":
+                self.git_label.configure(text="No projects")
+            else:
+                self.git_label.configure(text=f"Git: {text}")
         else:
             self.git_label.configure(text="")
     
@@ -239,8 +239,8 @@ class StatusBar(ctk.CTkFrame):
         """Set RAM usage percentage"""
         try:
             self.ram_label.configure(text=f"RAM: {percentage:.0f}%")
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Suppressed exception in set_ram_usage: {e}")
     
     def start_ram_monitoring(self):
         """Start monitoring RAM usage in background (queue-based, main-thread safe)"""
@@ -256,11 +256,11 @@ class StatusBar(ctk.CTkFrame):
                     try:
                         ram_percent = psutil.virtual_memory().percent
                         ram_queue.put(ram_percent)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Suppressed exception in RAM monitor: {e}")
                     time.sleep(5)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in RAM monitor loop: {e}")
         
         def poll_ram_queue():
             try:
@@ -270,8 +270,8 @@ class StatusBar(ctk.CTkFrame):
                         self.set_ram_usage(p)
                     except queue.Empty:
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in RAM poller: {e}")
             if self.winfo_exists():
                 self.after(1000, poll_ram_queue)
         

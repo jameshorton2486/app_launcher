@@ -2,8 +2,8 @@
   "window": {
     "width": 3844,
     "height": 2039,
-    "x": -460,
-    "y": 424,
+    "x": 137,
+    "y": 104,
     "start_minimized": false,
     "start_with_windows": true,
     "minimize_to_tray": true,
@@ -16,7 +16,8 @@
   "ui": {
     "show_toasts": true,
     "show_health_check_on_startup": true,
-    "suppress_startup_warnings": true
+    "suppress_startup_warnings": true,
+    "show_app_selector": true
   },
   "paths": {
     "downloads_folder": "C:\\Users\\james\\Downloads",

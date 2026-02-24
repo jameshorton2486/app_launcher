@@ -7,14 +7,7 @@ import pystray
 from PIL import Image, ImageDraw, ImageFont
 import threading
 import queue
-import sys
-import os
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
@@ -64,7 +57,9 @@ def create_tray_icon_image():
         raise
 
 
-def create_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None):
+def create_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None,
+                     include_utilities: bool = True, app_label: str = "App Launcher",
+                     tray_title: str = "James's Project Launcher"):
     """
     Create system tray icon with menu
 
@@ -88,14 +83,18 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         # Create menu items
         menu_items = []
 
-        tool_registry = ToolRegistry()
-        tool_registry.load_tools(TOOLS_FILE)
-
+        tool_registry = None
         tool_id_aliases = {
             "clear_standby_ram": "clear_ram_standby"
         }
 
         def get_tool_handler(tool_id: str):
+            if not include_utilities:
+                return lambda: (False, "Utilities disabled")
+            nonlocal tool_registry
+            if tool_registry is None:
+                tool_registry = ToolRegistry()
+                tool_registry.load_tools(TOOLS_FILE)
             resolved_id = tool_id
             if not tool_registry.get_tool_by_id(resolved_id):
                 resolved_id = tool_id_aliases.get(tool_id, tool_id)
@@ -132,7 +131,7 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         # Open App Launcher
         menu_items.append(
             pystray.MenuItem(
-                'Open App Launcher',
+                f'Open {app_label}',
                 make_show_window_handler(app_instance)
             )
         )
@@ -158,37 +157,37 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
             )
 
         # Utilities submenu
-        utilities_items = [
-            pystray.MenuItem(
-                'Empty Recycle Bin',
-                make_utility_handler(get_tool_handler("empty_recycle_bin"), "Empty Recycle Bin")
-            ),
-            pystray.MenuItem(
-                'Clear Temp Files',
-                make_utility_handler(get_tool_handler("clear_temp_files"), "Clear Temp Files")
-            ),
-            pystray.MenuItem(
-                'Flush DNS',
-                make_utility_handler(get_tool_handler("flush_dns"), "Flush DNS")
-            ),
-            pystray.MenuItem(
-                'Clear Prefetch',
-                make_utility_handler(get_tool_handler("clear_prefetch"), "Clear Prefetch")
-            ),
-            pystray.MenuItem(
-                'Clear RAM Standby',
-                make_utility_handler(get_tool_handler("clear_standby_ram"), "Clear RAM Standby")
-            ),
-            pystray.MenuItem(
-                'Restart Explorer',
-                make_utility_handler(get_tool_handler("restart_explorer"), "Restart Explorer")
-            ),
-        ]
-        menu_items.append(
-            pystray.MenuItem('Utilities', pystray.Menu(*utilities_items))
-        )
-
-        menu_items.append(pystray.Menu.SEPARATOR)
+        if include_utilities:
+            utilities_items = [
+                pystray.MenuItem(
+                    'Empty Recycle Bin',
+                    make_utility_handler(get_tool_handler("empty_recycle_bin"), "Empty Recycle Bin")
+                ),
+                pystray.MenuItem(
+                    'Clear Temp Files',
+                    make_utility_handler(get_tool_handler("clear_temp_files"), "Clear Temp Files")
+                ),
+                pystray.MenuItem(
+                    'Flush DNS',
+                    make_utility_handler(get_tool_handler("flush_dns"), "Flush DNS")
+                ),
+                pystray.MenuItem(
+                    'Clear Prefetch',
+                    make_utility_handler(get_tool_handler("clear_prefetch"), "Clear Prefetch")
+                ),
+                pystray.MenuItem(
+                    'Clear RAM Standby',
+                    make_utility_handler(get_tool_handler("clear_standby_ram"), "Clear RAM Standby")
+                ),
+                pystray.MenuItem(
+                    'Restart Explorer',
+                    make_utility_handler(get_tool_handler("restart_explorer"), "Restart Explorer")
+                ),
+            ]
+            menu_items.append(
+                pystray.MenuItem('Utilities', pystray.Menu(*utilities_items))
+            )
+            menu_items.append(pystray.Menu.SEPARATOR)
 
         # Settings - wrap in queue callback for thread safety
         def settings_handler(icon, item):
@@ -219,7 +218,7 @@ def create_tray_icon(app_instance, config_manager, process_service, cleanup_serv
         icon = pystray.Icon(
             "App Launcher",
             image,
-            "James's Project Launcher",
+            tray_title,
             menu,
             default_action=default_action_handler
         )
@@ -360,8 +359,8 @@ def exit_app(app_instance):
                 if hasattr(app_instance, 'tray_icon') and app_instance.tray_icon:
                     try:
                         app_instance.tray_icon.stop()
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Suppressed exception stopping tray icon: {e}")
                 
                 # Then quit the app
                 _quit_app_safe(app_instance)
@@ -418,7 +417,9 @@ def run_tray_icon(icon):
         logger.error(f"Error running tray icon: {e}", exc_info=True)
 
 
-def start_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None):
+def start_tray_icon(app_instance, config_manager, process_service, cleanup_service, on_settings=None,
+                    include_utilities: bool = True, app_label: str = "App Launcher",
+                    tray_title: str = "James's Project Launcher"):
     """
     Start the system tray icon in a background thread
     
@@ -446,7 +447,10 @@ def start_tray_icon(app_instance, config_manager, process_service, cleanup_servi
             config_manager,
             process_service,
             cleanup_service,
-            on_settings
+            on_settings,
+            include_utilities=include_utilities,
+            app_label=app_label,
+            tray_title=tray_title
         )
         
         # Run tray icon in a separate thread

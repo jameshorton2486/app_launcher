@@ -4,17 +4,12 @@ Displays individual file information in downloads tab
 """
 
 import customtkinter as ctk
-import sys
 import os
 import tkinter as tk
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 
 
 class FileItem(ctk.CTkFrame):
@@ -137,27 +132,23 @@ class FileItem(ctk.CTkFrame):
         self.dest_menu.pack(side='left', padx=(0, 10))
         
         # Move button
-        move_btn = ctk.CTkButton(
+        move_btn = Button3D(
             main_frame,
             text="Move",
             width=70,
             height=28,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.handle_move
         )
         move_btn.pack(side='left', padx=(0, 5))
         
         # Delete button
-        delete_btn = ctk.CTkButton(
+        delete_btn = Button3D(
             main_frame,
             text="Delete",
             width=70,
             height=28,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['accent_danger'],
-            hover_color='#cc0000',
+            bg_color=BUTTON_COLORS.DANGER,
             command=self.handle_delete
         )
         delete_btn.pack(side='left')

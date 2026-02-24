@@ -143,19 +143,32 @@ def get_hover_color(base_color: str) -> str:
 
 
 def create_styled_button(parent, **kwargs):
-    """Create a CTkButton with consistent styling defaults."""
-    import customtkinter as ctk
+    """Create a Button3D with consistent styling defaults."""
+    from src.components.button_3d import Button3D, BUTTON_COLORS
 
+    # Map legacy fg_color to bg_color for Button3D; drop CTkButton-only keys
+    kwargs = {k: v for k, v in kwargs.items() if k not in ("hover_color", "text_color", "border_width")}
+    if "fg_color" in kwargs:
+        kwargs["bg_color"] = kwargs.pop("fg_color")
     defaults = {
-        "fg_color": COLORS["accent_primary"],
-        "hover_color": get_hover_color(COLORS["accent_primary"]),
-        "text_color": COLORS["text_primary"],
+        "bg_color": COLORS.get("accent_primary", BUTTON_COLORS.PRIMARY),
         "corner_radius": 8,
         "font": (FONTS["family"], FONTS["size_base"], "bold"),
-        "border_width": 0,
     }
     defaults.update(kwargs)
-    return ctk.CTkButton(parent, **defaults)
+    return Button3D(parent, **defaults)
+
+
+class ButtonColors:
+    """Predefined button color palette for Button3D."""
+    PRIMARY = "#1DB954"
+    SECONDARY = "#4b5563"
+    DANGER = "#ef4444"
+    WARNING = "#f59e0b"
+    INFO = "#3b82f6"
+    SUCCESS = "#22c55e"
+    PURPLE = "#8b5cf6"
+    TEAL = "#14b8a6"
 
 def apply_theme(app, mode=None, accent_color=None):
     """
@@ -174,7 +187,7 @@ def apply_theme(app, mode=None, accent_color=None):
             from src.config_manager import ConfigManager
             config = ConfigManager()
             mode = config.get_setting('theme.mode', 'dark')
-        except:
+        except Exception:
             mode = 'dark'
     
     # Set appearance mode (system mode is supported by CustomTkinter)

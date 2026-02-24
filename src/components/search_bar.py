@@ -4,17 +4,11 @@ Provides search/filter functionality for tabs with debouncing
 """
 
 import customtkinter as ctk
-import sys
-import os
 import threading
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 
 # Try to import logger
 try:
@@ -67,15 +61,13 @@ class SearchBar(ctk.CTkFrame):
         self.search_entry.bind('<KeyRelease>', self._on_search_changed)
         
         # Clear button
-        self.clear_btn = ctk.CTkButton(
+        self.clear_btn = Button3D(
             self,
             text="✕",
             width=35,
             height=35,
             font=('Segoe UI', 12),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_danger'],
-            text_color=COLORS['text_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.clear_search
         )
         self.clear_btn.pack(side='right', padx=(5, 10), pady=10)

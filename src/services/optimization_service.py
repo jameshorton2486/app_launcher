@@ -5,8 +5,6 @@ Handles Windows performance and optimization operations
 
 import subprocess
 import ctypes
-import os
-import sys
 import winreg
 from typing import Tuple, Any, List, Dict
 

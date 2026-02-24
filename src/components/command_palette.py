@@ -18,11 +18,12 @@ class CommandPalette(ctk.CTkToplevel):
 
     recent_tools: List[str] = []
 
-    def __init__(self, parent, config_manager):
+    def __init__(self, parent, config_manager, allowed_tabs: List[str] | None = None):
         super().__init__(parent)
 
         self.parent = parent
         self.config_manager = config_manager
+        self.allowed_tabs = [tab.lower() for tab in allowed_tabs] if allowed_tabs else None
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
         self.results: List[Dict] = []
@@ -86,10 +87,11 @@ class CommandPalette(ctk.CTkToplevel):
         if not query:
             self.results = [self.tool_registry.get_tool_by_id(tid) for tid in self.recent_tools]
             self.results = [item for item in self.results if item]
+            self.results = self._filter_tools(self.results)
             if not self.results:
-                self.results = self.tool_registry.search_tools("")
+                self.results = self._filter_tools(self.tool_registry.search_tools(""))
         else:
-            self.results = self._fuzzy_search(query)
+            self.results = self._filter_tools(self._fuzzy_search(query))
 
         self.selected_index = 0
         for idx, tool in enumerate(self.results[:30]):
@@ -108,6 +110,16 @@ class CommandPalette(ctk.CTkToplevel):
             scored.append((score, tool))
         scored.sort(key=lambda item: item[0], reverse=True)
         return [tool for score, tool in scored if score > 0.2]
+
+    def _filter_tools(self, tools: List[Dict]) -> List[Dict]:
+        if not self.allowed_tabs:
+            return tools
+        filtered = []
+        for tool in tools:
+            tab = str(tool.get("tab", "")).strip().lower()
+            if tab in self.allowed_tabs:
+                filtered.append(tool)
+        return filtered
 
     def _add_result_row(self, tool: Dict, index: int):
         row = ctk.CTkFrame(self.results_frame, fg_color='transparent', corner_radius=8)

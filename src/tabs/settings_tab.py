@@ -6,17 +6,11 @@ Full-page settings with collapsible sections and auto-save
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, colorchooser
-import sys
 import os
 import json
 from datetime import datetime
 import webbrowser
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.components.button_3d import Button3D, BUTTON_COLORS
@@ -153,6 +147,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.check_updates = ctk.BooleanVar(value=self._get_setting('updates.check_on_start', True))
         self.show_toasts = ctk.BooleanVar(value=self._get_setting('ui.show_toasts', True))
         self.show_health_check = ctk.BooleanVar(value=self._get_setting('ui.show_health_check_on_startup', True))
+        self.show_app_selector = ctk.BooleanVar(value=self._get_setting('ui.show_app_selector', True))
 
         self._add_checkbox(section.content, "Start with Windows", self.start_with_windows)
         self._add_checkbox(section.content, "Start Minimized", self.start_minimized)
@@ -160,6 +155,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._add_checkbox(section.content, "Check for Updates on Start", self.check_updates)
         self._add_checkbox(section.content, "Show Toast Notifications", self.show_toasts)
         self._add_checkbox(section.content, "Show health check on startup", self.show_health_check)
+        self._add_checkbox(section.content, "Show app selector on startup", self.show_app_selector)
 
         hotkey_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         hotkey_frame.pack(fill='x', pady=8)
@@ -171,10 +167,12 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.hotkey_entry.insert(0, current_hotkey.replace('+', ' + ').replace('win', 'Win'))
         self.hotkey_entry.configure(state='readonly')
 
-        ctk.CTkButton(
+        Button3D(
             hotkey_frame,
             text="Change",
             width=120,
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.change_hotkey
         ).pack(side='left')
 
@@ -184,6 +182,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.check_updates.trace_add("write", lambda *_: self._queue_save())
         self.show_toasts.trace_add("write", lambda *_: self._queue_save())
         self.show_health_check.trace_add("write", lambda *_: self._queue_save())
+        self.show_app_selector.trace_add("write", lambda *_: self._queue_save())
 
     def _build_appearance_section(self):
         section = CollapsibleSection(self.sections_container, "APPEARANCE")
@@ -238,7 +237,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.color_preview = ctk.CTkFrame(color_frame, width=50, height=28, fg_color=self.accent_color)
         self.color_preview.pack(side='left', padx=(10, 10))
 
-        ctk.CTkButton(color_frame, text="Pick", width=80, command=self.pick_color).pack(side='left')
+        Button3D(color_frame, text="Pick", width=80, height=32, bg_color=BUTTON_COLORS.SECONDARY, command=self.pick_color).pack(side='left')
 
         self.theme_mode.trace_add("write", lambda *_: self._queue_save())
         self.theme_variant_display.trace_add("write", lambda *_: self._queue_save())
@@ -338,13 +337,12 @@ class SettingsTab(ctk.CTkScrollableFrame):
 
         for label, (key, url) in self.external_tools.items():
             frame = self._add_path_field(section.content, label, key)
-            download_btn = ctk.CTkButton(
+            download_btn = Button3D(
                 frame,
                 text="Download",
                 width=90,
                 height=28,
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['accent_secondary'],
+                bg_color=BUTTON_COLORS.INFO,
                 command=lambda link=url: webbrowser.open(link)
             )
             download_btn.pack(side='left', padx=(8, 0))
@@ -404,30 +402,30 @@ class SettingsTab(ctk.CTkScrollableFrame):
         links_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         links_frame.pack(fill='x', pady=8)
 
-        ctk.CTkButton(
+        Button3D(
             links_frame,
             text="GitHub Repo",
             width=120,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: webbrowser.open("https://github.com/jameshorton2486/app_launcher")
         ).pack(side='left', padx=(0, 8))
 
-        ctk.CTkButton(
+        Button3D(
             links_frame,
             text="Documentation",
             width=120,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: webbrowser.open("https://github.com/jameshorton2486/app_launcher")
         ).pack(side='left', padx=(0, 8))
 
-        ctk.CTkButton(
+        Button3D(
             links_frame,
             text="Report Issue",
             width=120,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: webbrowser.open("https://github.com/jameshorton2486/app_launcher/issues")
         ).pack(side='left')
 
@@ -560,10 +558,12 @@ class SettingsTab(ctk.CTkScrollableFrame):
         entry = ctk.CTkEntry(frame, width=360, textvariable=entry_var, font=('Segoe UI', 11))
         entry.pack(side='left', padx=(10, 10))
 
-        ctk.CTkButton(
+        Button3D(
             frame,
             text="Browse",
             width=90,
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: self.browse_path(entry_var, setting_key)
         ).pack(side='left')
 
@@ -639,6 +639,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._set_setting('updates.check_on_start', self.check_updates.get())
         self._set_setting('ui.show_toasts', self.show_toasts.get())
         self._set_setting('ui.show_health_check_on_startup', self.show_health_check.get())
+        self._set_setting('ui.show_app_selector', self.show_app_selector.get())
 
         hotkey_value = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '').lower()
         self._set_setting('window.global_hotkey', hotkey_value)
@@ -732,6 +733,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.check_updates.set(self._get_setting('updates.check_on_start', True))
         self.show_toasts.set(self._get_setting('ui.show_toasts', True))
         self.show_health_check.set(self._get_setting('ui.show_health_check_on_startup', True))
+        self.show_app_selector.set(self._get_setting('ui.show_app_selector', True))
 
         self.theme_mode.set(self._get_setting('theme.mode', 'dark'))
         theme_variant_name = self._get_setting('theme.variant', THEME_LOADER.current_theme_name)

@@ -4,17 +4,11 @@ Home screen with system overview and quick actions
 """
 
 import customtkinter as ctk
-import sys
 import os
 import threading
 import platform
 from datetime import datetime, timedelta
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.utils.constants import TOOLS_FILE
@@ -45,7 +39,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
     """Dashboard tab for system overview and quick actions."""
 
     def __init__(self, parent, config_manager, process_service=None, status_bar=None,
-                 on_open_downloads=None, on_health_update=None):
+                 on_open_downloads=None, on_health_update=None, read_only: bool = False):
         super().__init__(
             parent,
             fg_color=COLORS['bg_primary'],
@@ -55,6 +49,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         self.config_manager = config_manager
         self.status_bar = status_bar
         self.on_open_downloads = on_open_downloads
+        self.read_only = read_only
         self.process_service = process_service or ProcessService()
         self.cleanup_service = CleanupService()
         self.git_service = GitService()
@@ -89,9 +84,15 @@ class DashboardTab(ctk.CTkScrollableFrame):
         )
         title.pack(fill='x')
 
+        subtitle_text = (
+            "Your centralized hub for launching projects, optimizing Windows performance, and maintaining your system."
+        )
+        if self.read_only:
+            subtitle_text = "Your centralized hub for launching projects and monitoring system health."
+
         subtitle = ctk.CTkLabel(
             welcome_frame,
-            text="Your centralized hub for launching projects, optimizing Windows performance, and maintaining your system.",
+            text=subtitle_text,
             font=('Segoe UI', 14),
             text_color=COLORS['text_secondary'],
             anchor='w',
@@ -102,7 +103,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
         actions_row = ctk.CTkFrame(welcome_frame, fg_color='transparent')
         actions_row.pack(anchor='w', pady=(16, 0))
 
-        if self.on_open_downloads:
+        if self.on_open_downloads and not self.read_only:
             open_downloads = Button3D(
                 actions_row,
                 text="Open Downloads Manager",
@@ -113,15 +114,24 @@ class DashboardTab(ctk.CTkScrollableFrame):
             )
             open_downloads.pack(side='left', padx=(0, 12))
 
-        quick_cleanup = Button3D(
-            actions_row,
-            text="Run Quick Cleanup",
-            width=180,
-            height=36,
-            bg_color=BUTTON_COLORS.PRIMARY,
-            command=self._run_quick_cleanup
-        )
-        quick_cleanup.pack(side='left')
+        if not self.read_only:
+            quick_cleanup = Button3D(
+                actions_row,
+                text="Run Quick Cleanup",
+                width=180,
+                height=36,
+                bg_color=BUTTON_COLORS.PRIMARY,
+                command=self._run_quick_cleanup
+            )
+            quick_cleanup.pack(side='left')
+        else:
+            ctk.CTkLabel(
+                actions_row,
+                text="Power actions are available in Power Tools.",
+                font=('Segoe UI', 12),
+                text_color=COLORS['text_secondary'],
+                anchor='w'
+            ).pack(side='left')
 
         # Cards grid
         grid_frame = ctk.CTkFrame(self, fg_color='transparent')
@@ -133,9 +143,12 @@ class DashboardTab(ctk.CTkScrollableFrame):
         system_card.grid(row=0, column=0, padx=(0, 10), pady=10, sticky='nsew')
         self._build_system_overview(system_card)
 
-        actions_card = self._create_card(grid_frame, "Quick Actions")
-        actions_card.grid(row=0, column=1, padx=(10, 0), pady=10, sticky='nsew')
-        self._build_quick_actions(actions_card)
+        if not self.read_only:
+            actions_card = self._create_card(grid_frame, "Quick Actions")
+            actions_card.grid(row=0, column=1, padx=(10, 0), pady=10, sticky='nsew')
+            self._build_quick_actions(actions_card)
+        else:
+            grid_frame.grid_columnconfigure(1, weight=1)
 
         health_card = self._create_health_card(self)
         health_card.pack(fill='x', padx=40, pady=16)
@@ -355,18 +368,16 @@ class DashboardTab(ctk.CTkScrollableFrame):
             btn.grid(row=row, column=col, padx=8, pady=8)
 
     def _create_action_button(self, parent, icon, label, handler):
-        button = ctk.CTkButton(
+        button = Button3D(
             parent,
             text=f"{icon}\n{label}",
             width=100,
             height=100,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['bg_hover'],
-            text_color=COLORS['text_primary'],
+            corner_radius=12,
+            bg_color=BUTTON_COLORS.SECONDARY,
             font=('Segoe UI', 11, 'bold'),
             command=lambda: self._run_in_thread(handler)
         )
-        button.configure(corner_radius=12)
         return button
 
     def _build_recent_projects(self, card):
@@ -462,6 +473,9 @@ class DashboardTab(ctk.CTkScrollableFrame):
             messagebox.showerror("Launch Failed", message)
 
     def _run_tool(self, tool_id):
+        if self.read_only:
+            self._notify_read_only()
+            return
         if not self.tool_registry.get_tool_by_id(tool_id):
             logger.warning(f"Tool not found: {tool_id}")
             return
@@ -473,6 +487,9 @@ class DashboardTab(ctk.CTkScrollableFrame):
             messagebox.showerror("Action Failed", message)
 
     def _run_quick_cleanup(self):
+        if self.read_only:
+            self._notify_read_only()
+            return
         runner = QuickCleanupRunner(self, self.config_manager, self.tool_registry)
         runner.start()
 
@@ -526,6 +543,15 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
     def _run_in_thread(self, func):
         threading.Thread(target=func, daemon=True).start()
+
+    def _notify_read_only(self):
+        if self.status_bar:
+            self.status_bar.set_status("Open Power Tools to run system actions")
+        try:
+            import tkinter.messagebox as messagebox
+            messagebox.showinfo("Power Tools", "Open Power Tools to run system actions.")
+        except Exception:
+            pass
 
     def _refresh_system_stats(self):
         if not self.winfo_exists():
@@ -626,7 +652,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
             tool_id = rec.get("tool_id")
             action = rec.get("action")
-            if tool_id or action:
+            if (tool_id or action) and not self.read_only:
                 btn = Button3D(
                     row,
                     text="Run Now",
@@ -636,8 +662,18 @@ class DashboardTab(ctk.CTkScrollableFrame):
                     command=lambda tid=tool_id, act=action: self._run_recommendation(tid, act)
                 )
                 btn.pack(side='right', padx=(10, 0))
+            elif tool_id or action:
+                ctk.CTkLabel(
+                    row,
+                    text="Power Tools",
+                    font=('Segoe UI', 10, 'bold'),
+                    text_color=COLORS['text_tertiary']
+                ).pack(side='right', padx=(10, 0))
 
     def _run_recommendation(self, tool_id: str | None, action: str | None):
+        if self.read_only:
+            self._notify_read_only()
+            return None
         if action == "quick_cleanup":
             return self._run_quick_cleanup()
         if tool_id:

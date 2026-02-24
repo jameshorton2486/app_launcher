@@ -4,12 +4,16 @@ Supports multiple theme variants with hot-swapping capability.
 
 Current: Single dark theme (default)
 Future: dark, darker, light, custom, high-contrast
+
+Note: Theme changes should sync into the canonical COLORS dict in src/theme.py.
 """
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 from pathlib import Path
 import json
+
+from src.theme import COLORS as CANON_COLORS
 
 
 @dataclass
@@ -214,6 +218,7 @@ class ThemeLoader:
             return True
 
         self._current_theme_name = name
+        self._sync_to_canonical()
         self._notify_listeners()
         return True
 
@@ -252,10 +257,74 @@ class ThemeLoader:
                 colors=config.get("colors", {}),
                 is_dark=config.get("is_dark", True),
             )
+            if name == self._current_theme_name:
+                self._sync_to_canonical()
             return True
         except Exception as e:
             print(f"Failed to load theme: {e}")
             return False
+
+    def _sync_to_canonical(self) -> None:
+        """Map the current ThemeVariant colors into src.theme.COLORS."""
+        theme = self.current_theme
+
+        def _get(*path, default=None):
+            value: Any = theme.colors
+            for key in path:
+                if isinstance(value, dict) and key in value:
+                    value = value[key]
+                else:
+                    return default
+            return value
+
+        mapping = {
+            "bg_darkest": ("background", "darkest"),
+            "bg_dark": ("background", "dark"),
+            "bg_panel": ("background", "panel"),
+            "bg_card": ("background", "card"),
+            "bg_card_hover": ("background", "card_hover"),
+            "bg_input": ("background", "input"),
+            "bg_elevated": ("background", "elevated"),
+            "border_subtle": ("border", "subtle"),
+            "border_default": ("border", "default"),
+            "border_strong": ("border", "strong"),
+            "border_focus": ("border", "focus"),
+            "text_primary": ("text", "primary"),
+            "text_secondary": ("text", "secondary"),
+            "text_muted": ("text", "muted"),
+            "text_disabled": ("text", "disabled"),
+            "primary": ("semantic", "primary"),
+            "primary_hover": ("semantic", "primary_hover"),
+            "secondary": ("semantic", "secondary"),
+            "info": ("semantic", "info"),
+            "success": ("semantic", "success"),
+            "warning": ("semantic", "warning"),
+            "danger": ("semantic", "danger"),
+            "error": ("semantic", "danger"),
+        }
+
+        for key, path in mapping.items():
+            value = _get(*path)
+            if isinstance(value, str):
+                CANON_COLORS[key] = value
+
+        # Fill in commonly used aliases
+        if "primary" in CANON_COLORS:
+            CANON_COLORS["accent_primary"] = CANON_COLORS["primary"]
+        if "info" in CANON_COLORS:
+            CANON_COLORS["accent_secondary"] = CANON_COLORS["info"]
+        if "secondary" in CANON_COLORS:
+            CANON_COLORS["accent_muted"] = CANON_COLORS["secondary"]
+
+        if "text_muted" in CANON_COLORS:
+            CANON_COLORS["text_tertiary"] = CANON_COLORS["text_muted"]
+
+        if "bg_panel" in CANON_COLORS:
+            CANON_COLORS["bg_primary"] = CANON_COLORS["bg_panel"]
+        if "bg_card" in CANON_COLORS:
+            CANON_COLORS["bg_secondary"] = CANON_COLORS["bg_card"]
+        if "bg_card_hover" in CANON_COLORS:
+            CANON_COLORS["bg_hover"] = CANON_COLORS["bg_card_hover"]
 
 
 THEME_LOADER = ThemeLoader()

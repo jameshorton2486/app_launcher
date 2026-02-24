@@ -12,6 +12,7 @@ import re
 import customtkinter as ctk
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.utils.tool_registry import ToolRegistry
 from src.utils.tool_usage import ToolUsageStore
 from src.utils.constants import TOOLS_FILE
@@ -109,12 +110,12 @@ class QuickCleanupRunner:
         )
         self._total_label.pack(pady=(0, 6))
 
-        cancel_btn = ctk.CTkButton(
+        cancel_btn = Button3D(
             dialog,
             text="Cancel",
             width=120,
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['bg_hover'],
+            height=35,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self._cancel
         )
         cancel_btn.pack(pady=(0, 12))

@@ -12,13 +12,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
-from src.utils.constants import CONFIG_DIR, SETTINGS_FILE, PROJECTS_FILE, FILE_PATTERNS_FILE, TOOLS_FILE
+from src.theme import COLORS
 from src.utils.helpers import ensure_dir
 
 # Try to import logger, but don't fail if it doesn't exist yet
@@ -48,7 +43,25 @@ class ConfigManager:
     def __init__(self):
         try:
             logger.debug("Initializing ConfigManager...")
-            self.config_dir = CONFIG_DIR
+            if getattr(sys, 'frozen', False):
+                self.app_dir = Path(sys.executable).parent
+                self.bundle_dir = Path(sys._MEIPASS)
+            else:
+                self.app_dir = Path(__file__).resolve().parents[1]
+                self.bundle_dir = self.app_dir
+
+            self.config_dir = self.app_dir / "config"
+            self.defaults_dir = self.bundle_dir / "config"
+            self.settings_file = self.config_dir / "settings.json"
+            self.projects_file = self.config_dir / "projects.json"
+            self.file_patterns_file = self._select_path(
+                self.config_dir / "file_patterns.json",
+                self.defaults_dir / "file_patterns.json"
+            )
+            self.tools_file = self._select_path(
+                self.config_dir / "tools.json",
+                self.defaults_dir / "tools.json"
+            )
             ensure_dir(self.config_dir)
             
             self.settings = {}
@@ -64,6 +77,10 @@ class ConfigManager:
             print(f"[ERROR] ConfigManager init failed: {e}")
             logger.error(f"ConfigManager init failed: {e}", exc_info=True)
             raise
+
+    @staticmethod
+    def _select_path(primary: Path, fallback: Path) -> Path:
+        return primary if primary.exists() else fallback
     
     def _load_all(self):
         """Load all configuration files"""
@@ -177,12 +194,13 @@ class ConfigManager:
             },
             "theme": {
                 "mode": "dark",
-                "accent_color": "#6c5ce7"
+                "accent_color": COLORS.get("accent_primary")
             },
             "ui": {
                 "show_toasts": True,
                 "show_health_check_on_startup": True,
-                "suppress_startup_warnings": True
+                "suppress_startup_warnings": True,
+                "show_app_selector": True
             },
             "paths": {
                 "downloads_folder": "C:\\Users\\james\\Downloads",
@@ -198,17 +216,18 @@ class ConfigManager:
             }
         }
         
-        settings = self.load_json(SETTINGS_FILE, default_settings)
+        settings = self.load_json(self.settings_file, default_settings)
         
         # Merge with defaults to ensure all keys exist
         merged_settings = self._merge_dicts(default_settings, settings)
+        merged_settings = self._sanitize_settings(merged_settings)
         
         # Validate schema
         if self._validate_settings_schema(merged_settings):
             # Create file if it doesn't exist
-            if not os.path.exists(SETTINGS_FILE):
-                self.save_json(SETTINGS_FILE, merged_settings)
-                logger.info(f"Created default settings file: {SETTINGS_FILE}")
+            if not os.path.exists(self.settings_file):
+                self.save_json(self.settings_file, merged_settings)
+                logger.info(f"Created default settings file: {self.settings_file}")
             return merged_settings
         else:
             logger.warning("Settings validation failed, using defaults")
@@ -218,7 +237,7 @@ class ConfigManager:
         """Save settings.json with validation"""
         if self._validate_settings_schema(settings):
             self.settings = settings
-            self.save_json(SETTINGS_FILE, settings)
+            self.save_json(self.settings_file, settings)
             logger.info("Settings saved successfully")
         else:
             logger.error("Settings validation failed, not saving")
@@ -230,7 +249,7 @@ class ConfigManager:
             "projects": []
         }
         
-        data = self.load_json(PROJECTS_FILE, default_projects)
+        data = self.load_json(self.projects_file, default_projects)
         projects = data.get("projects", [])
         
         # Validate each project
@@ -242,9 +261,9 @@ class ConfigManager:
                 logger.warning(f"Invalid project schema, skipping: {project.get('name', 'Unknown')}")
         
         # Create file if it doesn't exist
-        if not os.path.exists(PROJECTS_FILE):
-            self.save_json(PROJECTS_FILE, {"projects": validated_projects})
-            logger.info(f"Created default projects file: {PROJECTS_FILE}")
+        if not os.path.exists(self.projects_file):
+            self.save_json(self.projects_file, {"projects": validated_projects})
+            logger.info(f"Created default projects file: {self.projects_file}")
         
         return validated_projects
     
@@ -259,7 +278,7 @@ class ConfigManager:
                 logger.warning(f"Invalid project schema, skipping: {project.get('name', 'Unknown')}")
         
         self.projects = validated_projects
-        self.save_json(PROJECTS_FILE, {"projects": validated_projects})
+        self.save_json(self.projects_file, {"projects": validated_projects})
         logger.info(f"Saved {len(validated_projects)} projects")
     
     def load_file_patterns(self) -> Dict[str, Any]:
@@ -282,14 +301,14 @@ class ConfigManager:
             "archive_folder": "C:\\Users\\james\\Documents\\Archives"
         }
         
-        patterns = self.load_json(FILE_PATTERNS_FILE, default_patterns)
+        patterns = self.load_json(self.file_patterns_file, default_patterns)
         
         # Validate schema
         if self._validate_file_patterns_schema(patterns):
             # Create file if it doesn't exist
-            if not os.path.exists(FILE_PATTERNS_FILE):
-                self.save_json(FILE_PATTERNS_FILE, patterns)
-                logger.info(f"Created default file_patterns file: {FILE_PATTERNS_FILE}")
+            if not os.path.exists(self.file_patterns_file):
+                self.save_json(self.file_patterns_file, patterns)
+                logger.info(f"Created default file_patterns file: {self.file_patterns_file}")
             return patterns
         else:
             logger.warning("File patterns validation failed, using defaults")
@@ -298,7 +317,7 @@ class ConfigManager:
     def save_file_patterns(self, patterns: Dict[str, Any]):
         """Save file_patterns.json"""
         self.file_patterns = patterns
-        self.save_json(FILE_PATTERNS_FILE, patterns)
+        self.save_json(self.file_patterns_file, patterns)
 
     def load_tools(self) -> Dict[str, Any]:
         """Load tools.json with validation"""
@@ -465,12 +484,12 @@ class ConfigManager:
             ]
         }
 
-        tools = self.load_json(TOOLS_FILE, default_tools)
+        tools = self.load_json(self.tools_file, default_tools)
 
         if self._validate_tools_schema(tools):
-            if not os.path.exists(TOOLS_FILE):
-                self.save_json(TOOLS_FILE, tools)
-                logger.info(f"Created default tools file: {TOOLS_FILE}")
+            if not os.path.exists(self.tools_file):
+                self.save_json(self.tools_file, tools)
+                logger.info(f"Created default tools file: {self.tools_file}")
             return tools
 
         logger.warning("Tools validation failed, using defaults")
@@ -485,6 +504,54 @@ class ConfigManager:
             else:
                 result[key] = value
         return result
+
+    def _sanitize_settings(self, settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply defensive validation to settings values."""
+        if not isinstance(settings, dict):
+            return settings
+
+        window = settings.setdefault("window", {})
+        default_width = 1200
+        default_height = 800
+
+        width = window.get("width")
+        height = window.get("height")
+
+        if not isinstance(width, int) or width < 100 or width > 7680:
+            logger.debug("Resetting invalid window width to default")
+            window["width"] = default_width
+        if not isinstance(height, int) or height < 100 or height > 4320:
+            logger.debug("Resetting invalid window height to default")
+            window["height"] = default_height
+
+        width = window.get("width", default_width)
+        height = window.get("height", default_height)
+
+        x = window.get("x")
+        y = window.get("y")
+        if not isinstance(x, int):
+            window["x"] = None
+        if not isinstance(y, int):
+            window["y"] = None
+
+        if window.get("x") is not None and window["x"] < -width:
+            logger.debug("Resetting window x position (off-screen)")
+            window["x"] = None
+        if window.get("y") is not None and window["y"] < -height:
+            logger.debug("Resetting window y position (off-screen)")
+            window["y"] = None
+
+        for section_key in ("paths", "external_tools"):
+            section = settings.get(section_key, {})
+            if not isinstance(section, dict):
+                settings[section_key] = {}
+                section = settings[section_key]
+            for key, value in list(section.items()):
+                if not isinstance(value, str):
+                    logger.debug("Resetting non-string path for %s.%s", section_key, key)
+                    section[key] = ""
+
+        return settings
     
     def get_setting(self, key_path: str, default: Any = None) -> Any:
         """

@@ -3,9 +3,16 @@ Application constants
 """
 
 import os
+import sys
+from pathlib import Path
 
 # Get app directory (parent of src directory)
-APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if getattr(sys, 'frozen', False):
+    APP_DIR = str(Path(sys.executable).parent)
+    BUNDLE_DIR = str(Path(sys._MEIPASS))
+else:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    BUNDLE_DIR = APP_DIR
 
 # Default paths
 DEFAULT_DOWNLOADS_FOLDER = "C:\\Users\\james\\Downloads"
@@ -21,3 +28,9 @@ SETTINGS_FILE = os.path.join(APP_DIR, "config", "settings.json")
 PROJECTS_FILE = os.path.join(APP_DIR, "config", "projects.json")
 FILE_PATTERNS_FILE = os.path.join(APP_DIR, "config", "file_patterns.json")
 TOOLS_FILE = os.path.join(APP_DIR, "config", "tools.json")
+
+if not os.path.exists(FILE_PATTERNS_FILE):
+    FILE_PATTERNS_FILE = os.path.join(BUNDLE_DIR, "config", "file_patterns.json")
+
+if not os.path.exists(TOOLS_FILE):
+    TOOLS_FILE = os.path.join(BUNDLE_DIR, "config", "tools.json")

@@ -4,23 +4,14 @@ Loads optimization tools from registry and displays collapsible sections
 """
 
 import customtkinter as ctk
-import sys
-import os
 import tkinter.messagebox as messagebox
 import threading
 import ctypes
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
-try:
-    from src.utils.theme_extended import SPACING
-except ImportError:
-    SPACING = type('SPACING', (), {'lg': 16, 'md': 12, 'xl': 20, 'xxl': 24})()
+from src.components.button_3d import Button3D, BUTTON_COLORS
+from src.theme import SPACING
 from src.utils.tool_registry import ToolRegistry
 from src.utils.constants import TOOLS_FILE
 from src.components.utility_button import UtilityButton
@@ -120,17 +111,17 @@ class OptimizationTab(ctk.CTkScrollableFrame):
         if not sections:
             empty_label = ctk.CTkLabel(
                 self,
-                text="No optimization tools configured.",
+                text="Unable to load optimization tools.\nCheck that config/tools.json is present and valid.",
                 font=('Segoe UI', 14),
                 text_color=COLORS['text_secondary'],
                 anchor='w'
             )
-            empty_label.pack(fill='x', padx=SPACING.xl, pady=SPACING.xl)
+            empty_label.pack(fill='x', padx=SPACING.get("xl", 24), pady=SPACING.get("xl", 24))
             return
 
         for section in sections:
             card = ctk.CTkFrame(self, fg_color=COLORS['border_default'], corner_radius=16)
-            card.pack(fill='x', padx=SPACING.xxl, pady=SPACING.md)
+            card.pack(fill='x', padx=SPACING.get("2xl", 32), pady=SPACING.get("md", 12))
 
             section_frame = CollapsibleSection(
                 card,
@@ -159,6 +150,7 @@ class OptimizationTab(ctk.CTkScrollableFrame):
             icon = tool.get("icon", "")
             title = tool.get("title", "")
             tooltip = tool.get("description", "")
+            requires_restart = tool.get("requires_restart", False)
 
             handler = lambda tid=tool_id: self._execute_tool(tid)
 
@@ -170,7 +162,8 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 command=handler,
                 tooltip=tooltip,
                 width=100,
-                height=100
+                height=100,
+                requires_restart=requires_restart
             )
 
             row = index // columns
@@ -190,7 +183,12 @@ class OptimizationTab(ctk.CTkScrollableFrame):
             if not self._confirm_risky_operation(tool_id):
                 return False, "Cancelled"
 
-        success, message = self.tool_registry.execute_tool(tool_id, self.config_manager)
+        skip_confirmation = tool_id in {"disable_vbs", "enable_vbs", "enable_hags", "disable_hags"}
+        success, message = self.tool_registry.execute_tool(
+            tool_id,
+            self.config_manager,
+            skip_confirmation=skip_confirmation
+        )
         if not success:
             messagebox.showerror("Operation Failed", message)
         return success, message
@@ -298,21 +296,21 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 dialog.destroy()
                 ready.set()
 
-            ctk.CTkButton(
+            Button3D(
                 actions,
                 text="Cancel",
                 width=140,
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['bg_hover'],
+                height=35,
+                bg_color=BUTTON_COLORS.SECONDARY,
                 command=cancel
             ).pack(side='left')
 
-            disable_btn = ctk.CTkButton(
+            disable_btn = Button3D(
                 actions,
                 text="Disable VBS",
                 width=160,
-                fg_color=COLORS['error'],
-                hover_color=COLORS['warning'],
+                height=35,
+                bg_color=BUTTON_COLORS.DANGER,
                 state='disabled',
                 command=proceed
             )
@@ -383,21 +381,21 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 dialog.destroy()
                 ready.set()
 
-            ctk.CTkButton(
+            Button3D(
                 actions,
                 text="Cancel",
                 width=140,
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['bg_hover'],
+                height=35,
+                bg_color=BUTTON_COLORS.SECONDARY,
                 command=cancel
             ).pack(side='left')
 
-            enable_btn = ctk.CTkButton(
+            enable_btn = Button3D(
                 actions,
                 text="Enable HAGS",
                 width=160,
-                fg_color=COLORS['warning'],
-                hover_color=COLORS['accent_secondary'],
+                height=35,
+                bg_color=BUTTON_COLORS.WARNING,
                 state='disabled',
                 command=proceed
             )

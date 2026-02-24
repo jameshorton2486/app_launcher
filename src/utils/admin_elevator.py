@@ -148,8 +148,8 @@ def run_powershell_elevated(script: str, wait: bool = True) -> Tuple[bool, str]:
                 time.sleep(2)
                 try:
                     os.unlink(temp_script)
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Suppressed exception removing temp script: {e}")
             threading.Thread(target=cleanup, daemon=True).start()
     except Exception as e:
         logger.error(f"Error running elevated PowerShell: {e}")

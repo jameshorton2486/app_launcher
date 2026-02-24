@@ -32,7 +32,7 @@ app_launcher/
 │   ├── app.py                # Main application class
 │   ├── config_manager.py     # Configuration handling
 │   ├── theme.py              # Theme system
-│   ├── tabs/                 # Tab implementations (3 tabs)
+│   ├── tabs/                 # Tab implementations (6 tabs)
 │   ├── components/           # Reusable UI components (8 components)
 │   ├── services/             # Business logic (4 services)
 │   └── utils/                # Utilities (8 utilities)

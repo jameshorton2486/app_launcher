@@ -133,7 +133,8 @@ class GitService:
             # Get current branch
             try:
                 status['branch'] = repo.active_branch.name
-            except:
+            except Exception as e:
+                logger.debug(f"Suppressed exception getting active branch: {e}")
                 status['branch'] = 'detached' if repo.head.is_detached else 'unknown'
             
             # Check for uncommitted changes
@@ -150,9 +151,9 @@ class GitService:
                     commits_behind = list(repo.iter_commits(f"{repo.active_branch}..{tracking}"))
                     status['ahead'] = len(commits_ahead)
                     status['behind'] = len(commits_behind)
-            except:
+            except Exception as e:
                 # No tracking branch or other error
-                pass
+                logger.debug(f"Suppressed exception checking tracking branch: {e}")
             
             # Determine status text
             if not status['clean']:

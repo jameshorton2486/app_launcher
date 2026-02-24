@@ -36,7 +36,19 @@ class ExternalToolService:
         if fallback_path:
             return self._start_process(fallback_path, tool_name)
 
-        return False, f"{tool_name} not found. Configure path in settings."
+        tool_title, download_url = self._get_tool_info(tool_name)
+        display_name = tool_title or tool_name
+        if download_url:
+            return False, f"{display_name} not found. Download it from: {download_url}"
+        return False, f"{display_name} not found. Configure path in settings."
+
+    def _get_tool_info(self, tool_name: str):
+        tools_data = getattr(self.config_manager, "tools", {}) or {}
+        for section in tools_data.get("sections", []):
+            for tool in section.get("tools", []):
+                if tool.get("id") == tool_name:
+                    return tool.get("title"), tool.get("download_url")
+        return None, None
 
     def _resolve_from_registry(self, tool_name: str) -> str:
         config_path = os.path.join(

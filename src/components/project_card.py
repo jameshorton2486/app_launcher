@@ -4,18 +4,13 @@ Displays individual project information and actions
 """
 
 import customtkinter as ctk
-import sys
 import os
 import tkinter as tk
 from tkinter import simpledialog
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
+from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.services.external_tool_service import ExternalToolService
 
 
@@ -108,14 +103,13 @@ class ProjectCard(ctk.CTkFrame):
         
         # Favorite button (star toggle)
         favorite_icon = '⭐' if self.project.get('favorite', False) else '☆'
-        self.favorite_btn = ctk.CTkButton(
+        self.favorite_btn = Button3D(
             right_frame,
             text=favorite_icon,
             width=30,
             height=30,
             font=('Segoe UI', 12),
-            fg_color='transparent',
-            hover_color=COLORS['bg_tertiary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.toggle_favorite
         )
         self.favorite_btn.pack(side='left', padx=2)
@@ -159,53 +153,48 @@ class ProjectCard(ctk.CTkFrame):
         buttons_frame.pack(fill='x', padx=10, pady=(5, 10))
         
         # Launch button
-        launch_btn = ctk.CTkButton(
+        launch_btn = Button3D(
             buttons_frame,
             text="▶ Launch",
-            width=80,
+            width=90,
             height=28,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['accent_success'],
-            hover_color='#00a085',
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=self.launch_project
         )
         launch_btn.pack(side='left', padx=2)
         
         # Folder button
-        folder_btn = ctk.CTkButton(
+        folder_btn = Button3D(
             buttons_frame,
             text="📁",
             width=35,
             height=28,
             font=('Segoe UI', 12),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.open_folder
         )
         folder_btn.pack(side='left', padx=2)
         
         # Terminal button
-        terminal_btn = ctk.CTkButton(
+        terminal_btn = Button3D(
             buttons_frame,
             text="💻",
             width=35,
             height=28,
             font=('Segoe UI', 12),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.open_terminal
         )
         terminal_btn.pack(side='left', padx=2)
 
         # Debug button
-        debug_btn = ctk.CTkButton(
+        debug_btn = Button3D(
             buttons_frame,
             text="🐛",
             width=35,
             height=28,
             font=('Segoe UI', 12),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.launch_debugger
         )
         debug_btn.pack(side='left', padx=2)
@@ -227,14 +216,13 @@ class ProjectCard(ctk.CTkFrame):
         
         # Claude button
         if self.project.get('claude_project_url'):
-            claude_btn = ctk.CTkButton(
+            claude_btn = Button3D(
                 buttons_frame,
                 text="🤖",
                 width=35,
                 height=28,
                 font=('Segoe UI', 12),
-                fg_color=COLORS['bg_tertiary'],
-                hover_color=COLORS['accent_secondary'],
+                bg_color=BUTTON_COLORS.SECONDARY,
                 command=self.open_claude
             )
             claude_btn.pack(side='left', padx=2)
@@ -516,14 +504,12 @@ class ProjectCard(ctk.CTkFrame):
             commit_label.pack(pady=10, padx=20, fill='x')
         
         # Close button
-        close_btn = ctk.CTkButton(
+        close_btn = Button3D(
             main_frame,
             text="Close",
             width=100,
             height=32,
-            font=('Segoe UI', 11),
-            fg_color=COLORS['accent_primary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.PRIMARY,
             command=popup.destroy
         )
         close_btn.pack(pady=20)

@@ -18,7 +18,15 @@ import traceback
 from pathlib import Path
 
 # Ensure the app directory is in the path
-APP_DIR = Path(__file__).parent.absolute()
+if getattr(sys, 'frozen', False):
+    # Running as PyInstaller bundle
+    APP_DIR = Path(sys.executable).parent
+    BUNDLE_DIR = Path(sys._MEIPASS)
+else:
+    # Running from source
+    APP_DIR = Path(__file__).resolve().parent
+    BUNDLE_DIR = APP_DIR
+
 sys.path.insert(0, str(APP_DIR))
 
 # Set working directory to app location
@@ -258,8 +266,8 @@ def reset_configuration():
     logger.info("Configuration reset. Defaults will be created on next run.")
 
 
-def main():
-    """Main entry point for the application."""
+def run_with_app(app_factory, app_display_name: str) -> int:
+    """Run the application with a provided app factory."""
     global logger
     
     # Parse arguments first (before logging, so --help works fast)
@@ -277,7 +285,7 @@ def main():
         logger.debug("Debug logging enabled")
     
     logger.info("=" * 50)
-    logger.info("James's Project Launcher starting...")
+    logger.info(f"{app_display_name} starting...")
     logger.info(f"Python version: {sys.version}")
     logger.info(f"Working directory: {APP_DIR}")
     logger.info(f"Arguments: minimized={args.minimized}, debug={args.debug}")
@@ -305,12 +313,10 @@ def main():
     try:
         print("[INFO] Loading application modules...")
         logger.info("Loading application modules...")
-        
-        from src.app import AppLauncher
-        
+
         print("[INFO] Creating application window...")
         logger.info("Creating application window...")
-        app = AppLauncher()
+        app = app_factory()
         
         # Start minimized if requested (from command line)
         if args.minimized:
@@ -356,6 +362,12 @@ def main():
         traceback.print_exc()
         logger.exception(f"Failed to start application: {e}")
         return 1
+
+
+def main():
+    """Main entry point for the application."""
+    from src.apps.core_app import create_app
+    return run_with_app(create_app, "James's Project Launcher")
 
 
 if __name__ == "__main__":

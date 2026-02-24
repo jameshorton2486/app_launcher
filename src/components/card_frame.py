@@ -6,19 +6,7 @@ Provides consistent card styling with subtle depth.
 import customtkinter as ctk
 from typing import Optional
 
-import sys
-import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-
-try:
-    from src.utils.theme_extended import THEME, SPACING, Spacing
-except ImportError:
-    THEME = {"card": "#1c2230", "panel": "#161a22", "border": "#2a3142",
-             "text_primary": "#e6e9ef", "text_secondary": "#a0a6b8"}
-    SPACING = Spacing = type('Spacing', (), {'xs': 4, 'sm': 8, 'lg': 20, 'xl': 32})()
+from src.theme import COLORS, SPACING, get_hover_color
 
 
 class CardFrame(ctk.CTkFrame):
@@ -51,18 +39,20 @@ class CardFrame(ctk.CTkFrame):
         """
         self._hover_effect = hover_effect
         self._elevated = elevated
-        pad = getattr(SPACING, 'lg', 20) if hasattr(SPACING, 'lg') else SPACING.get('lg', 20)
+        pad = SPACING.get("lg", 16)
         self._padding = padding if padding is not None else pad
 
-        bg = THEME["card"] if elevated else THEME["panel"]
-        hover_bg = "#242b3d" if elevated else THEME["card"]
+        bg_card = COLORS.get("bg_card", COLORS.get("bg_secondary"))
+        bg_panel = COLORS.get("bg_panel", COLORS.get("bg_secondary"))
+        bg = bg_card if elevated else bg_panel
+        hover_bg = COLORS.get("bg_card_hover", get_hover_color(bg_card)) if elevated else bg_card
 
         super().__init__(
             parent,
             fg_color=bg,
             corner_radius=12,
             border_width=1,
-            border_color=THEME["border"],
+            border_color=COLORS.get("border", COLORS.get("border_default")),
             **kwargs
         )
 
@@ -90,8 +80,8 @@ class CardFrame(ctk.CTkFrame):
 
         Returns the header frame for additional customization.
         """
-        sm = getattr(SPACING, 'sm', 8) if hasattr(SPACING, 'sm') else (SPACING.get('sm', 8) if isinstance(SPACING, dict) else 8)
-        xs = getattr(SPACING, 'xs', 4) if hasattr(SPACING, 'xs') else (SPACING.get('xs', 4) if isinstance(SPACING, dict) else 4)
+        sm = SPACING.get("sm", 8)
+        xs = SPACING.get("xs", 4)
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=self._padding, pady=(self._padding, sm))
 
@@ -106,7 +96,7 @@ class CardFrame(ctk.CTkFrame):
             title_row,
             text=title,
             font=("Segoe UI", 15, "bold"),
-            text_color=THEME["text_primary"]
+            text_color=COLORS["text_primary"]
         )
         title_label.pack(side="left")
 
@@ -115,7 +105,7 @@ class CardFrame(ctk.CTkFrame):
                 header,
                 text=subtitle,
                 font=("Segoe UI", 12),
-                text_color=THEME["text_secondary"]
+                text_color=COLORS["text_secondary"]
             )
             subtitle_label.pack(anchor="w", pady=(xs, 0))
 
@@ -143,7 +133,7 @@ class CardFrame(ctk.CTkFrame):
         if separator:
             sep = ctk.CTkFrame(
                 self,
-                fg_color=THEME.get("border", "#2a3142"),
+                fg_color=COLORS.get("border", COLORS.get("border_default")),
                 height=1
             )
             sep.pack(fill="x", padx=self._padding)

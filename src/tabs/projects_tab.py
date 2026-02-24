@@ -4,20 +4,14 @@ Displays and manages project cards
 """
 
 import customtkinter as ctk
-import sys
 import os
 import threading
 import queue
 import time
 from typing import Dict
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
-from src.theme import COLORS
+from src.theme import COLORS, FONTS
 from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.services.git_service import GitService
 from src.services.process_service import ProcessService
@@ -197,7 +191,7 @@ class ProjectsTab(ctk.CTkFrame):
             empty_label = ctk.CTkLabel(
                 self.cards_frame,
                 text="No projects found.\nClick '+ Add Project' to get started.",
-                font=('Segoe UI', 14),
+                font=(FONTS['family'], FONTS['size_lg']),
                 text_color=COLORS['text_secondary']
             )
             empty_label.pack(expand=True, pady=50)
@@ -360,9 +354,8 @@ class ProjectsTab(ctk.CTkFrame):
             try:
                 self.drop_target_register(DND_FILES)
                 self.dnd_bind('<<Drop>>', self.on_file_drop)
-            except:
-                # If DND not available, silently fail
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in drag-drop setup: {e}")
         except ImportError:
             # tkinterdnd2 not available, drag-drop won't work
             pass
@@ -396,38 +389,32 @@ class ProjectsTab(ctk.CTkFrame):
         )
         auto_scroll_switch.pack(side='right', padx=(8, 0))
 
-        copy_btn = ctk.CTkButton(
+        copy_btn = Button3D(
             header,
             text="Copy",
             width=70,
             height=26,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.copy_console
         )
         copy_btn.pack(side='right', padx=(8, 0))
 
-        clear_btn = ctk.CTkButton(
+        clear_btn = Button3D(
             header,
             text="Clear",
             width=70,
             height=26,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.clear_console
         )
         clear_btn.pack(side='right', padx=(8, 0))
 
-        self.toggle_console_btn = ctk.CTkButton(
+        self.toggle_console_btn = Button3D(
             header,
             text="Collapse",
             width=80,
             height=26,
-            font=('Segoe UI', 10),
-            fg_color=COLORS['bg_tertiary'],
-            hover_color=COLORS['accent_secondary'],
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.toggle_console
         )
         self.toggle_console_btn.pack(side='right')
@@ -474,7 +461,7 @@ class ProjectsTab(ctk.CTkFrame):
             self.clipboard_clear()
             self.clipboard_append(text)
         except Exception:
-            pass
+            logger.debug("Suppressed exception in console copy")
     
     def on_file_drop(self, event):
         """Handle file drop on Projects tab"""
@@ -500,4 +487,4 @@ class ProjectsTab(ctk.CTkFrame):
                 self.add_project(dropped_file=dropped_file)
         except Exception as e:
             # Silently handle errors
-            pass
+            logger.debug(f"Suppressed exception in file drop handling: {e}")

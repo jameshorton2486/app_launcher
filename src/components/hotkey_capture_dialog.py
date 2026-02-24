@@ -5,16 +5,9 @@ Dialog for capturing global hotkey combinations
 
 import customtkinter as ctk
 import keyboard
-import sys
-import os
 import threading
 import time
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.components.button_3d import Button3D, BUTTON_COLORS
@@ -48,6 +41,7 @@ class HotkeyCaptureDialog(ctk.CTkToplevel):
         
         self.setup_window()
         self.setup_ui()
+        self.after(100, lambda: self.focus_set())
         self.start_capture()
     
     def setup_window(self):
@@ -248,7 +242,7 @@ class HotkeyCaptureDialog(ctk.CTkToplevel):
         if hasattr(self, 'hook'):
             try:
                 keyboard.unhook(self.hook)
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"Suppressed exception in hotkey unhook: {e}")
         self.result = None
         self.destroy()

@@ -6,14 +6,8 @@ Comprehensive settings management UI
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, colorchooser
-import sys
 import os
 
-# Add parent directory to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
 
 from src.theme import COLORS
 from src.components.button_3d import Button3D, BUTTON_COLORS
@@ -40,6 +34,7 @@ class SettingsDialog(ctk.CTkToplevel):
         
         self.setup_window()
         self.setup_ui()
+        self.bind("<Escape>", lambda e: self.destroy())
     
     def setup_window(self):
         """Configure dialog window"""
@@ -108,10 +103,12 @@ class SettingsDialog(ctk.CTkToplevel):
         self.hotkey_entry.insert(0, hotkey_display)
         self.hotkey_entry.configure(state='readonly')  # Make read-only, use button to change
         
-        self.change_hotkey_btn = ctk.CTkButton(
+        self.change_hotkey_btn = Button3D(
             hotkey_frame,
             text="Change Hotkey",
             width=120,
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.change_hotkey
         )
         self.change_hotkey_btn.pack(side='left')
@@ -158,15 +155,22 @@ class SettingsDialog(ctk.CTkToplevel):
         
         ctk.CTkLabel(color_frame, text="Accent Color:", font=('Segoe UI', 11)).pack(side='left', padx=(0, 10))
         
-        self.color_preview = ctk.CTkFrame(color_frame, width=50, height=30, fg_color=self.settings.get('theme', {}).get('accent_color', '#6c5ce7'))
+        self.color_preview = ctk.CTkFrame(
+            color_frame,
+            width=50,
+            height=30,
+            fg_color=self.settings.get('theme', {}).get('accent_color', COLORS['accent_primary'])
+        )
         self.color_preview.pack(side='left', padx=(0, 10))
         
-        self.accent_color = self.settings.get('theme', {}).get('accent_color', '#6c5ce7')
+        self.accent_color = self.settings.get('theme', {}).get('accent_color', COLORS['accent_primary'])
         
-        ctk.CTkButton(
+        Button3D(
             color_frame,
             text="Pick",
             width=80,
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=self.pick_color
         ).pack(side='left')
         
@@ -228,10 +232,12 @@ class SettingsDialog(ctk.CTkToplevel):
             self.path_entries = {}
         self.path_entries[setting_key] = entry
         
-        ctk.CTkButton(
+        Button3D(
             path_frame,
             text="Browse",
             width=80,
+            height=32,
+            bg_color=BUTTON_COLORS.SECONDARY,
             command=lambda: self.browse_path(entry)
         ).pack(side='left')
     
@@ -355,7 +361,7 @@ class SettingsDialog(ctk.CTkToplevel):
         try:
             from src.theme import apply_theme
             theme_mode = self.settings.get('theme', {}).get('mode', 'dark')
-            accent_color = self.settings.get('theme', {}).get('accent_color', '#6c5ce7')
+            accent_color = self.settings.get('theme', {}).get('accent_color', COLORS['accent_primary'])
             apply_theme(self.master, mode=theme_mode, accent_color=accent_color)
         except Exception as e:
             import tkinter.messagebox as messagebox

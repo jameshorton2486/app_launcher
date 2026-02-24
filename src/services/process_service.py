@@ -329,8 +329,8 @@ Set WshShell = Nothing''')
                     time.sleep(2)
                     try:
                         os.unlink(vbs_script.name)
-                    except:
-                        pass
+                    except OSError as e:
+                        logger.debug(f"Suppressed exception cleaning vbs script: {e}")
                 threading.Thread(target=cleanup_vbs, daemon=True).start()
                 return True, "Project launched"
             
@@ -350,7 +350,8 @@ Set WshShell = Nothing''')
         try:
             os.startfile(folder_path)
             return True
-        except:
+        except Exception as e:
+            logger.debug(f"Suppressed exception opening folder: {e}")
             return False
     
     def open_terminal(self, folder_path: str) -> bool:
@@ -365,7 +366,8 @@ Set WshShell = Nothing''')
                 return True
             subprocess.Popen(['powershell.exe'], cwd=folder_path)
             return True
-        except:
+        except Exception as e:
+            logger.debug(f"Suppressed exception opening terminal: {e}")
             return False
     
     def open_in_ide(self, ide_name: str, folder_path: str, config_manager) -> bool:
@@ -384,7 +386,8 @@ Set WshShell = Nothing''')
         try:
             subprocess.Popen([ide_path, folder_path], creationflags=subprocess.CREATE_NO_WINDOW)
             return True
-        except:
+        except Exception as e:
+            logger.debug(f"Suppressed exception opening IDE: {e}")
             return False
     
     def open_url(self, url: str) -> bool:
@@ -393,5 +396,6 @@ Set WshShell = Nothing''')
             import webbrowser
             webbrowser.open(url)
             return True
-        except:
+        except Exception as e:
+            logger.debug(f"Suppressed exception opening URL: {e}")
             return False

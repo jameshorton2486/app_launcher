@@ -1,7 +1,136 @@
 {
-  "tool_runs": {},
+  "tool_runs": {
+    "clear_temp_files": {
+      "last_run": "2026-02-24T12:42:45.926913",
+      "run_count": 4,
+      "last_result": "success",
+      "last_message": "Freed 190.5 MB from 93 files",
+      "last_freed_mb": 190.5,
+      "total_freed_mb": 658.5
+    },
+    "empty_recycle_bin": {
+      "last_run": "2026-02-24T12:42:48.118096",
+      "run_count": 3,
+      "last_result": "error",
+      "last_message": "Failed to empty recycle bin",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "clear_ram_standby": {
+      "last_run": "2026-02-24T12:42:41.497193",
+      "run_count": 6,
+      "last_result": "success",
+      "last_message": "Standby RAM cleared",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "clear_update_cache": {
+      "last_run": "2026-02-11T18:23:06.551132",
+      "run_count": 3,
+      "last_result": "success",
+      "last_message": "Command executed with elevation",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "reset_ms_store": {
+      "last_run": "2026-02-06T21:14:07.011873",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "Failed to reset MS Store: [WinError 740] The requested operation requires elevation",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "pause_updates": {
+      "last_run": "2026-02-06T21:14:14.603393",
+      "run_count": 2,
+      "last_result": "success",
+      "last_message": "Updates paused for 7 days (feature requires Windows Update API)",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "flush_dns": {
+      "last_run": "2026-02-24T12:42:44.534649",
+      "run_count": 3,
+      "last_result": "success",
+      "last_message": "DNS cache flushed successfully",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "clear_browser_cache": {
+      "last_run": "2026-02-24T12:42:41.749443",
+      "run_count": 4,
+      "last_result": "success",
+      "last_message": "No browser cache found to clear",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 5.8
+    },
+    "disable_sysmain": {
+      "last_run": "2026-02-06T21:14:52.016474",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "[SC] OpenService FAILED 5:\n\nAccess is denied.",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "balanced_plan": {
+      "last_run": "2026-02-06T21:15:45.064193",
+      "run_count": 1,
+      "last_result": "success",
+      "last_message": "Power plan set: Balanced",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "best_appearance": {
+      "last_run": "2026-02-22T20:43:03.358975",
+      "run_count": 1,
+      "last_result": "success",
+      "last_message": "Registry updated",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "bleachbit": {
+      "last_run": "2026-02-24T12:43:14.787119",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "BleachBit not found. Download it from: https://www.bleachbit.org/download",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "treesize": {
+      "last_run": "2026-02-24T12:43:16.639929",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "TreeSize Free not found. Download it from: https://www.jam-software.com/treesize_free",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "everything": {
+      "last_run": "2026-02-24T12:43:17.697486",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "Everything Search not found. Download it from: https://www.voidtools.com/downloads/",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "crystaldiskinfo": {
+      "last_run": "2026-02-24T12:43:20.870932",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "CrystalDiskInfo not found. Download it from: https://crystalmark.info/en/download/",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    },
+    "bcuninstaller": {
+      "last_run": "2026-02-24T12:43:21.496249",
+      "run_count": 1,
+      "last_result": "error",
+      "last_message": "BCUninstaller not found. Download it from: https://www.bcuninstaller.com/",
+      "last_freed_mb": 0.0,
+      "total_freed_mb": 0.0
+    }
+  },
   "last_full_cleanup": null,
   "first_launch": "2026-01-31T23:03:57.229964",
-  "total_space_freed_mb": 0,
-  "total_tools_run": 0
+  "total_space_freed_mb": 664.3,
+  "total_tools_run": 34
 }
