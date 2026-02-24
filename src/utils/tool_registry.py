@@ -49,6 +49,7 @@ class ToolRegistry:
         self._tool_index: Dict[str, Dict[str, Any]] = {}
         self._service_cache: Dict[str, Any] = {}
         self._plugin_index: Dict[str, Any] = {}
+        self._integrity_issues: List[str] = []
 
     def load_tools(self, json_path: str) -> None:
         """Load tool definitions from JSON path"""
@@ -81,7 +82,7 @@ class ToolRegistry:
 
     def validate_tools(self, config_manager) -> List[str]:
         """Validate that each tool resolves to a callable service method."""
-        errors: List[str] = []
+        errors: List[str] = list(self._integrity_issues)
         for tool_id, tool in self._tool_index.items():
             if not isinstance(tool, dict):
                 continue
@@ -121,6 +122,10 @@ class ToolRegistry:
         else:
             logger.info("Tool validation completed with no issues")
         return errors
+
+    def get_integrity_issues(self) -> List[str]:
+        """Return indexing/plugin integrity issues discovered at load time."""
+        return list(self._integrity_issues)
 
     def get_sections_by_tab(self, tab_name: str) -> List[dict]:
         """Return sections matching a tab name"""
@@ -211,15 +216,18 @@ class ToolRegistry:
         self._sections = []
         self._tool_index = {}
         self._plugin_index = {}
+        self._integrity_issues = []
 
     def _index_tools(self) -> None:
         self._sections = self._tools_data.get("sections", [])
         if not isinstance(self._sections, list):
             self._sections = []
             self._tool_index = {}
+            self._integrity_issues = []
             return
 
         self._tool_index = {}
+        self._integrity_issues = []
         for section in self._sections:
             if not isinstance(section, dict):
                 continue
@@ -228,6 +236,11 @@ class ToolRegistry:
                     continue
                 tool_id = tool.get("id")
                 if not tool_id:
+                    continue
+                if tool_id in self._tool_index:
+                    issue = f"duplicate tool id: {tool_id}"
+                    logger.warning(issue)
+                    self._integrity_issues.append(issue)
                     continue
                 tool_entry = dict(tool)
                 tool_entry.setdefault("section_id", section.get("id"))
@@ -318,6 +331,11 @@ class ToolRegistry:
                 }
 
                 self._plugin_index[plugin_id] = plugin
+                if plugin_id in self._tool_index:
+                    issue = f"duplicate tool id from plugin: {plugin_id}"
+                    logger.warning(issue)
+                    self._integrity_issues.append(issue)
+                    continue
                 self._tool_index[plugin_id] = tool_entry
 
                 key = (str(tab), str(section_id))
