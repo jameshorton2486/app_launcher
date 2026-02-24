@@ -121,14 +121,14 @@ class OptimizationTab(ctk.CTkScrollableFrame):
 
         for section in sections:
             card = ctk.CTkFrame(self, fg_color=COLORS['border_default'], corner_radius=16)
-            card.pack(fill='x', padx=SPACING.get("2xl", 32), pady=SPACING.get("md", 12))
+            card.pack(fill='x', padx=SPACING.get("xl", 24), pady=SPACING.get("sm", 8))
 
             section_frame = CollapsibleSection(
                 card,
                 title=section.get("title", ""),
                 description="" if self.professional_mode else section.get("description", ""),
                 icon="" if self.professional_mode else section.get("icon", ""),
-                collapsed=self.professional_mode
+                collapsed=True
             )
             section_frame.pack(fill='both', expand=True, padx=0, pady=(0, 2))
 
@@ -162,8 +162,8 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 subtitle="",
                 command=handler,
                 tooltip=tooltip,
-                width=90 if self.professional_mode else 100,
-                height=86 if self.professional_mode else 100,
+                width=90 if self.professional_mode else 108,
+                height=86 if self.professional_mode else 108,
                 requires_restart=requires_restart
             )
 

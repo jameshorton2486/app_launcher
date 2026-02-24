@@ -144,7 +144,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
     def setup_ui(self):
         # Enhanced header with gradient effect
         header = ctk.CTkFrame(self, fg_color='transparent')
-        header.pack(fill='x', padx=SPACING.get("2xl", 32), pady=(SPACING.get("3xl", 48), SPACING.get("xl", 24)))
+        header.pack(fill='x', padx=SPACING.get("xl", 24), pady=(SPACING.get("2xl", 32), SPACING.get("lg", 16)))
 
         # Title section
         title_frame = ctk.CTkFrame(header, fg_color='transparent')
@@ -223,7 +223,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         for section in sections:
             # Enhanced card with shadow effect
             card_container = ctk.CTkFrame(self, fg_color='transparent')
-            card_container.pack(fill='x', padx=40, pady=16)
+            card_container.pack(fill='x', padx=24, pady=10)
             
             # Shadow layer
             shadow = ctk.CTkFrame(
@@ -248,7 +248,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
                 title=section.get("title", ""),
                 description="" if self.professional_mode else section.get("description", ""),
                 icon="" if self.professional_mode else section.get("icon", ""),
-                collapsed=self.professional_mode,
+                collapsed=True,
                 section_id=section.get("id", "")
             )
             section_frame._section_id = section.get("id", "")
@@ -307,8 +307,8 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
                 subtitle="",
                 command=handler,
                 tooltip=tooltip,
-                width=96 if self.professional_mode else 120,
-                height=92 if self.professional_mode else 120,
+                width=96 if self.professional_mode else 108,
+                height=92 if self.professional_mode else 108,
                 requires_admin=requires_admin,
                 requires_restart=requires_restart,
                 accent_color=section_color
