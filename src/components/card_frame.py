@@ -25,6 +25,7 @@ class CardFrame(ctk.CTkFrame):
         parent,
         hover_effect: bool = False,
         elevated: bool = True,
+        professional_mode: bool = False,
         padding: Optional[int] = None,
         **kwargs
     ):
@@ -39,8 +40,10 @@ class CardFrame(ctk.CTkFrame):
         """
         self._hover_effect = hover_effect
         self._elevated = elevated
+        self._professional_mode = professional_mode
         pad = SPACING.get("lg", 16)
-        self._padding = padding if padding is not None else pad
+        compact_pad = SPACING.get("sm", 8)
+        self._padding = padding if padding is not None else (compact_pad if professional_mode else pad)
 
         bg_card = COLORS.get("bg_card", COLORS.get("bg_secondary"))
         bg_panel = COLORS.get("bg_panel", COLORS.get("bg_secondary"))
@@ -50,7 +53,7 @@ class CardFrame(ctk.CTkFrame):
         super().__init__(
             parent,
             fg_color=bg,
-            corner_radius=12,
+            corner_radius=8 if professional_mode else 12,
             border_width=1,
             border_color=COLORS.get("border", COLORS.get("border_default")),
             **kwargs

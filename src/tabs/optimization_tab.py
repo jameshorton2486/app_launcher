@@ -99,6 +99,7 @@ class OptimizationTab(ctk.CTkScrollableFrame):
         )
 
         self.config_manager = config_manager
+        self.professional_mode = bool(self.config_manager.get_setting("ui.professional_mode", False))
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
 
@@ -125,9 +126,9 @@ class OptimizationTab(ctk.CTkScrollableFrame):
             section_frame = CollapsibleSection(
                 card,
                 title=section.get("title", ""),
-                description=section.get("description", ""),
-                icon=section.get("icon", ""),
-                collapsed=False
+                description="" if self.professional_mode else section.get("description", ""),
+                icon="" if self.professional_mode else section.get("icon", ""),
+                collapsed=self.professional_mode
             )
             section_frame.pack(fill='both', expand=True, padx=0, pady=(0, 2))
 
@@ -145,10 +146,11 @@ class OptimizationTab(ctk.CTkScrollableFrame):
             grid.grid_columnconfigure(col, weight=1)
 
         for index, tool in enumerate(tools):
+            tool = self.tool_registry.get_ui_tool(tool, professional_mode=self.professional_mode)
             tool_id = tool.get("id", "")
             icon = tool.get("icon", "")
             title = tool.get("title", "")
-            tooltip = tool.get("description", "")
+            tooltip = "" if self.professional_mode else tool.get("description", "")
             requires_restart = tool.get("requires_restart", False)
 
             handler = lambda tid=tool_id: self._execute_tool(tid)
@@ -160,8 +162,8 @@ class OptimizationTab(ctk.CTkScrollableFrame):
                 subtitle="",
                 command=handler,
                 tooltip=tooltip,
-                width=100,
-                height=100,
+                width=90 if self.professional_mode else 100,
+                height=86 if self.professional_mode else 100,
                 requires_restart=requires_restart
             )
 

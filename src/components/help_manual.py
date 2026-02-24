@@ -25,6 +25,11 @@ class HelpManual(ctk.CTkToplevel):
     def __init__(self, parent, allowed_tabs: List[str] | None = None):
         super().__init__(parent)
 
+        config_manager = getattr(parent, "config_manager", None)
+        self.professional_mode = bool(
+            config_manager.get_setting("ui.professional_mode", False)
+        ) if config_manager else False
+
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
         self.usage_store = ToolUsageStore()
@@ -166,6 +171,7 @@ class HelpManual(ctk.CTkToplevel):
                 self._add_tool_entry(self.list_frame, tool)
 
     def _add_tool_entry(self, parent, tool: Dict[str, Any]):
+        tool = self.tool_registry.get_ui_tool(tool, professional_mode=self.professional_mode)
         card = ctk.CTkFrame(
             parent,
             fg_color=COLORS['bg_secondary'],
@@ -178,36 +184,38 @@ class HelpManual(ctk.CTkToplevel):
         header = ctk.CTkFrame(card, fg_color='transparent')
         header.pack(fill='x', padx=16, pady=(14, 6))
 
-        icon = tool.get("icon", "•")
+        icon = "" if self.professional_mode else tool.get("icon", "•")
         title = tool.get("title", "Untitled")
         ctk.CTkLabel(
             header,
-            text=f"{icon}  {title}",
+            text=f"{icon}  {title}".strip(),
             font=('Segoe UI', 14, 'bold'),
             text_color=COLORS['text_primary'],
             anchor='w'
         ).pack(side='left', fill='x', expand=True)
 
-        badge = ctk.CTkLabel(
-            header,
-            text=self._format_risk_label(tool),
-            font=('Segoe UI', 10, 'bold'),
-            text_color=self._risk_color(tool),
-            anchor='e'
-        )
-        badge.pack(side='right')
+        if not self.professional_mode:
+            badge = ctk.CTkLabel(
+                header,
+                text=self._format_risk_label(tool),
+                font=('Segoe UI', 10, 'bold'),
+                text_color=self._risk_color(tool),
+                anchor='e'
+            )
+            badge.pack(side='right')
 
-        description = tool.get("detailed_description") or tool.get("description", "")
-        desc_label = ctk.CTkLabel(
-            card,
-            text=description,
-            font=('Segoe UI', 12),
-            text_color=COLORS['text_secondary'],
-            anchor='w',
-            justify='left',
-            wraplength=720
-        )
-        desc_label.pack(fill='x', padx=16, pady=(0, 8))
+        if not self.professional_mode:
+            description = tool.get("detailed_description") or tool.get("description", "")
+            desc_label = ctk.CTkLabel(
+                card,
+                text=description,
+                font=('Segoe UI', 12),
+                text_color=COLORS['text_secondary'],
+                anchor='w',
+                justify='left',
+                wraplength=720
+            )
+            desc_label.pack(fill='x', padx=16, pady=(0, 8))
 
         info_frame = ctk.CTkFrame(card, fg_color='transparent')
         info_frame.pack(fill='x', padx=16, pady=(0, 10))
@@ -233,7 +241,7 @@ class HelpManual(ctk.CTkToplevel):
 
         notes = tool.get("notes") or tool.get("warning")
         when_to_use = tool.get("when_to_use")
-        if notes or when_to_use:
+        if (notes or when_to_use) and not self.professional_mode:
             note_frame = ctk.CTkFrame(card, fg_color='transparent')
             note_frame.pack(fill='x', padx=16, pady=(0, 14))
 

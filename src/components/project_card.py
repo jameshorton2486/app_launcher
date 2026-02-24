@@ -45,6 +45,7 @@ class ProjectCard(ctk.CTkFrame):
         self.on_edit = on_edit
         self.on_remove = on_remove
         self.output_callback = output_callback
+        self.professional_mode = bool(self.config_manager.get_setting("ui.professional_mode", False))
         
         self.git_status = None
         self.last_commit = None
@@ -69,7 +70,7 @@ class ProjectCard(ctk.CTkFrame):
         
         icon_label = ctk.CTkLabel(
             icon_name_row,
-            text=self.project.get('icon', '📁'),
+            text="" if self.professional_mode else self.project.get('icon', '📁'),
             font=('Segoe UI', 20),
             width=30
         )
@@ -86,7 +87,7 @@ class ProjectCard(ctk.CTkFrame):
         
         # Description (muted text)
         description = self.project.get('description', '')
-        if description:
+        if description and not self.professional_mode:
             desc_label = ctk.CTkLabel(
                 left_frame,
                 text=description,
@@ -155,7 +156,7 @@ class ProjectCard(ctk.CTkFrame):
         # Launch button
         launch_btn = Button3D(
             buttons_frame,
-            text="▶ Launch",
+            text="Launch",
             width=90,
             height=28,
             bg_color=BUTTON_COLORS.PRIMARY,
@@ -166,8 +167,8 @@ class ProjectCard(ctk.CTkFrame):
         # Folder button
         folder_btn = Button3D(
             buttons_frame,
-            text="📁",
-            width=35,
+            text="Folder" if self.professional_mode else "📁",
+            width=72 if self.professional_mode else 35,
             height=28,
             font=('Segoe UI', 12),
             bg_color=BUTTON_COLORS.SECONDARY,
@@ -178,8 +179,8 @@ class ProjectCard(ctk.CTkFrame):
         # Terminal button
         terminal_btn = Button3D(
             buttons_frame,
-            text="💻",
-            width=35,
+            text="Terminal" if self.professional_mode else "💻",
+            width=82 if self.professional_mode else 35,
             height=28,
             font=('Segoe UI', 12),
             bg_color=BUTTON_COLORS.SECONDARY,
@@ -190,8 +191,8 @@ class ProjectCard(ctk.CTkFrame):
         # Debug button
         debug_btn = Button3D(
             buttons_frame,
-            text="🐛",
-            width=35,
+            text="Debug" if self.professional_mode else "🐛",
+            width=72 if self.professional_mode else 35,
             height=28,
             font=('Segoe UI', 12),
             bg_color=BUTTON_COLORS.SECONDARY,
@@ -202,7 +203,7 @@ class ProjectCard(ctk.CTkFrame):
         # IDE dropdown
         self.ide_menu = ctk.CTkOptionMenu(
             buttons_frame,
-            values=['🔧 IDE', 'Cursor', 'VS Code', 'PyCharm'],
+            values=['IDE', 'Cursor', 'VS Code', 'PyCharm'],
             width=100,
             height=28,
             font=('Segoe UI', 10),
@@ -211,7 +212,7 @@ class ProjectCard(ctk.CTkFrame):
             button_hover_color=COLORS['accent_secondary'],
             command=self.open_ide
         )
-        self.ide_menu.set('🔧 IDE')
+        self.ide_menu.set('IDE')
         self.ide_menu.pack(side='left', padx=2)
         
         # Claude button
@@ -231,7 +232,7 @@ class ProjectCard(ctk.CTkFrame):
         self.github_menu = ctk.CTkOptionMenu(
             buttons_frame,
             values=[
-                '🐙 GitHub',
+                'GitHub',
                 'Pull',
                 'Push',
                 'Sync',
@@ -248,7 +249,7 @@ class ProjectCard(ctk.CTkFrame):
             button_hover_color=COLORS['accent_secondary'],
             command=self.handle_github_action
         )
-        self.github_menu.set('🐙 GitHub')
+        self.github_menu.set('GitHub')
         self.github_menu.pack(side='left', padx=2)
         
         # Bind right-click for context menu
@@ -337,7 +338,7 @@ class ProjectCard(ctk.CTkFrame):
     
     def open_ide(self, choice):
         """Open project in IDE"""
-        if choice == '🔧 IDE':
+        if choice == 'IDE':
             return
         
         ide_map = {
@@ -355,7 +356,7 @@ class ProjectCard(ctk.CTkFrame):
             )
         
         # Reset dropdown
-        self.ide_menu.set('🔧 IDE')
+        self.ide_menu.set('IDE')
 
     def launch_debugger(self):
         """Launch project with debugger"""
@@ -377,7 +378,7 @@ class ProjectCard(ctk.CTkFrame):
             self.process_service.open_url(url)
 
     def handle_github_action(self, choice: str):
-        if choice == '🐙 GitHub':
+        if choice == 'GitHub':
             return
 
         action_map = {
@@ -392,7 +393,7 @@ class ProjectCard(ctk.CTkFrame):
         handler = action_map.get(choice)
         if handler:
             handler()
-        self.github_menu.set('🐙 GitHub')
+        self.github_menu.set('GitHub')
     
     def show_context_menu(self, event):
         """Show right-click context menu"""

@@ -525,3 +525,23 @@ class ToolRegistry:
                 if query in str(tag).lower():
                     return True
         return False
+
+    @staticmethod
+    def _strip_non_ascii(text: str) -> str:
+        raw = str(text or "")
+        return raw.encode("ascii", "ignore").decode("ascii").strip()
+
+    def get_ui_tool(self, tool: Dict[str, Any], professional_mode: bool = False) -> Dict[str, Any]:
+        """Return a tool dictionary normalized for UI rendering mode."""
+        tool_ui = dict(tool or {})
+        if not professional_mode:
+            return tool_ui
+
+        tool_ui["title"] = self._strip_non_ascii(tool_ui.get("title", ""))
+        tool_ui["icon"] = ""
+        tool_ui["description"] = ""
+
+        risk_level = str(tool_ui.get("risk_level", "")).lower()
+        if risk_level in {"safe", "low"}:
+            tool_ui["risk_level"] = ""
+        return tool_ui

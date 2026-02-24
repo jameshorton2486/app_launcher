@@ -148,6 +148,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.show_toasts = ctk.BooleanVar(value=self._get_setting('ui.show_toasts', True))
         self.show_health_check = ctk.BooleanVar(value=self._get_setting('ui.show_health_check_on_startup', True))
         self.show_app_selector = ctk.BooleanVar(value=self._get_setting('ui.show_app_selector', True))
+        self.professional_mode = ctk.BooleanVar(value=self._get_setting('ui.professional_mode', True))
 
         self._add_checkbox(section.content, "Start with Windows", self.start_with_windows)
         self._add_checkbox(section.content, "Start Minimized", self.start_minimized)
@@ -156,6 +157,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._add_checkbox(section.content, "Show Toast Notifications", self.show_toasts)
         self._add_checkbox(section.content, "Show health check on startup", self.show_health_check)
         self._add_checkbox(section.content, "Show app selector on startup", self.show_app_selector)
+        self._add_checkbox(section.content, "Professional Mode", self.professional_mode)
 
         hotkey_frame = ctk.CTkFrame(section.content, fg_color='transparent')
         hotkey_frame.pack(fill='x', pady=8)
@@ -183,6 +185,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.show_toasts.trace_add("write", lambda *_: self._queue_save())
         self.show_health_check.trace_add("write", lambda *_: self._queue_save())
         self.show_app_selector.trace_add("write", lambda *_: self._queue_save())
+        self.professional_mode.trace_add("write", lambda *_: self._queue_save())
 
     def _build_appearance_section(self):
         section = CollapsibleSection(self.sections_container, "APPEARANCE")
@@ -637,6 +640,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self._set_setting('ui.show_toasts', self.show_toasts.get())
         self._set_setting('ui.show_health_check_on_startup', self.show_health_check.get())
         self._set_setting('ui.show_app_selector', self.show_app_selector.get())
+        self._set_setting('ui.professional_mode', self.professional_mode.get())
 
         hotkey_value = self.hotkey_entry.get().replace(' + ', '+').replace('Win', 'win').replace(' ', '').lower()
         self._set_setting('window.global_hotkey', hotkey_value)
@@ -731,6 +735,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.show_toasts.set(self._get_setting('ui.show_toasts', True))
         self.show_health_check.set(self._get_setting('ui.show_health_check_on_startup', True))
         self.show_app_selector.set(self._get_setting('ui.show_app_selector', True))
+        self.professional_mode.set(self._get_setting('ui.professional_mode', True))
 
         self.theme_mode.set(self._get_setting('theme.mode', 'dark'))
         theme_variant_name = self._get_setting('theme.variant', THEME_LOADER.current_theme_name)

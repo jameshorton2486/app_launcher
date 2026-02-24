@@ -87,6 +87,14 @@ class SettingsDialog(ctk.CTkToplevel):
             variable=self.start_minimized,
             font=('Segoe UI', 11)
         ).pack(fill='x', pady=5)
+
+        self.professional_mode = ctk.BooleanVar(value=self.settings.get('ui', {}).get('professional_mode', True))
+        ctk.CTkCheckBox(
+            main_frame,
+            text="Professional Mode",
+            variable=self.professional_mode,
+            font=('Segoe UI', 11)
+        ).pack(fill='x', pady=5)
         
         # HOTKEY Section
         self.create_section(main_frame, "HOTKEY")
@@ -339,6 +347,8 @@ class SettingsDialog(ctk.CTkToplevel):
         self.settings['window']['global_hotkey'] = hotkey_value
         self.settings['theme']['mode'] = self.theme_mode.get()
         self.settings['theme']['accent_color'] = self.accent_color
+        self.settings.setdefault('ui', {})
+        self.settings['ui']['professional_mode'] = self.professional_mode.get()
         
         # Update paths
         for key, entry in getattr(self, 'path_entries', {}).items():

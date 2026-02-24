@@ -134,6 +134,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         )
 
         self.config_manager = config_manager
+        self.professional_mode = bool(self.config_manager.get_setting("ui.professional_mode", False))
         self.cleanup_service = CleanupService()
         self.tool_registry = ToolRegistry()
         self.tool_registry.load_tools(TOOLS_FILE)
@@ -155,7 +156,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         
         icon_label = ctk.CTkLabel(
             title_frame_inner,
-            text="🛠️",
+            text="" if self.professional_mode else "🛠️",
             font=('Segoe UI', 32),
             text_color=COLORS['accent_primary'],
             anchor='w'
@@ -186,7 +187,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
 
         quick_cleanup = Button3D(
             actions_frame,
-            text="🚀 Run Quick Cleanup",
+            text="Run Quick Cleanup" if self.professional_mode else "🚀 Run Quick Cleanup",
             width=240,
             height=44,
             bg_color=BUTTON_COLORS.SUCCESS,
@@ -197,7 +198,7 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         
         info_btn = Button3D(
             actions_frame,
-            text="ℹ️ Help",
+            text="Help" if self.professional_mode else "ℹ️ Help",
             width=120,
             height=44,
             bg_color=BUTTON_COLORS.INFO,
@@ -245,9 +246,9 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             section_frame = CollapsibleSection(
                 card,
                 title=section.get("title", ""),
-                description=section.get("description", ""),
-                icon=section.get("icon", ""),
-                collapsed=False,
+                description="" if self.professional_mode else section.get("description", ""),
+                icon="" if self.professional_mode else section.get("icon", ""),
+                collapsed=self.professional_mode,
                 section_id=section.get("id", "")
             )
             section_frame._section_id = section.get("id", "")
@@ -286,10 +287,11 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
         section_color = category_colors.get(section_id, COLORS['accent_primary'])
 
         for index, tool in enumerate(tools):
+            tool = self.tool_registry.get_ui_tool(tool, professional_mode=self.professional_mode)
             tool_id = tool.get("id", "")
-            icon = tool.get("icon", "") or "⚙️"  # Default icon if missing
+            icon = tool.get("icon", "") if self.professional_mode else (tool.get("icon", "") or "⚙️")
             title = tool.get("title", "")
-            tooltip = tool.get("description", "")
+            tooltip = "" if self.professional_mode else tool.get("description", "")
             requires_admin = tool.get("requires_admin", False)
             requires_restart = tool.get("requires_restart", False)
             
@@ -305,8 +307,8 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
                 subtitle="",
                 command=handler,
                 tooltip=tooltip,
-                width=120,
-                height=120,
+                width=96 if self.professional_mode else 120,
+                height=92 if self.professional_mode else 120,
                 requires_admin=requires_admin,
                 requires_restart=requires_restart,
                 accent_color=section_color

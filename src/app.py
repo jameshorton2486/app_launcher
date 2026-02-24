@@ -950,6 +950,22 @@ class AppLauncher(ctk.CTk):
             
             logger.info("Settings saved successfully")
             self.status_bar.set_status("Settings saved")
+
+            # Refresh tab layouts for mode toggles that should apply immediately.
+            if self.projects_tab:
+                self.projects_tab.load_projects()
+            if self.maintenance_tab:
+                self.maintenance_tab.destroy()
+                maintenance_view = self.views.get("Maintenance")
+                if maintenance_view is not None:
+                    self.maintenance_tab = MaintenanceTab(maintenance_view, self.config_manager)
+                    self.maintenance_tab.pack(fill='both', expand=True)
+            if self.optimization_tab:
+                self.optimization_tab.destroy()
+                optimization_view = self.views.get("Optimization")
+                if optimization_view is not None:
+                    self.optimization_tab = OptimizationTab(optimization_view, self.config_manager)
+                    self.optimization_tab.pack(fill='both', expand=True)
         except Exception as e:
             logger.error(f"Error saving settings: {e}", exc_info=True)
             self.status_bar.set_status("Error saving settings")

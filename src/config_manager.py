@@ -200,7 +200,8 @@ class ConfigManager:
                 "show_toasts": True,
                 "show_health_check_on_startup": True,
                 "suppress_startup_warnings": True,
-                "show_app_selector": True
+                "show_app_selector": True,
+                "professional_mode": True
             },
             "paths": {
                 "downloads_folder": "C:\\Users\\james\\Downloads",
