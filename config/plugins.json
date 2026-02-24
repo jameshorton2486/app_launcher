@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "enabled": true,
+  "plugins": {
+    "bleachbit": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "system_health",
+      "section_title": "SYSTEM HEALTH",
+      "section_description": "System stability and health tooling for development machines.",
+      "section_icon": "🩺",
+      "order": 10
+    },
+    "bcuninstaller": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "system_health",
+      "section_title": "SYSTEM HEALTH",
+      "section_description": "System stability and health tooling for development machines.",
+      "section_icon": "🩺",
+      "order": 10
+    },
+    "autoruns": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "system_health",
+      "section_title": "SYSTEM HEALTH",
+      "section_description": "System stability and health tooling for development machines.",
+      "section_icon": "🩺",
+      "order": 10
+    },
+    "crystaldiskinfo": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "system_health",
+      "section_title": "SYSTEM HEALTH",
+      "section_description": "System stability and health tooling for development machines.",
+      "section_icon": "🩺",
+      "order": 10
+    },
+    "treesize": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "storage_files",
+      "section_title": "STORAGE & FILES",
+      "section_description": "Storage analysis and fast file lookup.",
+      "section_icon": "🗂",
+      "order": 20
+    },
+    "everything": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "storage_files",
+      "section_title": "STORAGE & FILES",
+      "section_description": "Storage analysis and fast file lookup.",
+      "section_icon": "🗂",
+      "order": 20
+    },
+    "shutup10": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "privacy_tools",
+      "section_title": "PRIVACY",
+      "section_description": "Privacy management tools.",
+      "section_icon": "🔒",
+      "order": 30
+    },
+    "process_lasso": {
+      "enabled": true,
+      "tab": "optimization",
+      "section_id": "performance",
+      "section_title": "PERFORMANCE",
+      "section_description": "Stable performance controls for heavy development workloads.",
+      "section_icon": "⚡",
+      "order": 10
+    },
+    "hwinfo": {
+      "enabled": true,
+      "tab": "maintenance",
+      "section_id": "system_monitoring",
+      "section_title": "SYSTEM MONITORING",
+      "section_description": "Optional advanced hardware monitoring.",
+      "section_icon": "🖥",
+      "order": 40
+    }
+  }
+}
+

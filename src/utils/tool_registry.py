@@ -9,6 +9,8 @@ import os
 from datetime import datetime, timedelta
 import re
 import threading
+import importlib.util
+from pathlib import Path
 
 from src.theme import COLORS
 
@@ -46,6 +48,7 @@ class ToolRegistry:
         self._sections: List[Dict[str, Any]] = []
         self._tool_index: Dict[str, Dict[str, Any]] = {}
         self._service_cache: Dict[str, Any] = {}
+        self._plugin_index: Dict[str, Any] = {}
 
     def load_tools(self, json_path: str) -> None:
         """Load tool definitions from JSON path"""
@@ -68,6 +71,7 @@ class ToolRegistry:
                 return
             self._tools_data = data
             self._index_tools()
+            self._load_plugins(json_path)
         except json.JSONDecodeError as exc:
             logger.error(f"Invalid JSON in tools config: {exc}")
             self._reset_tools()
@@ -84,6 +88,14 @@ class ToolRegistry:
             handler = tool.get("handler") if isinstance(tool.get("handler"), dict) else {}
             service_name = tool.get("service") or handler.get("service")
             method_name = tool.get("method") or handler.get("method")
+
+            if tool_id in self._plugin_index:
+                plugin = self._plugin_index.get(tool_id)
+                if not plugin or not hasattr(plugin, "launch") or not callable(getattr(plugin, "launch")):
+                    message = f"{tool_id}: plugin launch method unavailable"
+                    logger.warning(message)
+                    errors.append(message)
+                continue
 
             if not service_name or not method_name:
                 message = f"{tool_id}: missing service or method"
@@ -140,6 +152,9 @@ class ToolRegistry:
         service_name = tool.get("service") or handler.get("service")
         method_name = tool.get("method") or handler.get("method")
 
+        if tool_id in self._plugin_index:
+            return self._execute_plugin(tool_id, tool, config_manager)
+
         args = self._select_args(tool, handler)
         kwargs = self._select_kwargs(tool, handler)
 
@@ -195,6 +210,7 @@ class ToolRegistry:
         self._tools_data = {"sections": []}
         self._sections = []
         self._tool_index = {}
+        self._plugin_index = {}
 
     def _index_tools(self) -> None:
         self._sections = self._tools_data.get("sections", [])
@@ -219,6 +235,133 @@ class ToolRegistry:
                 if section.get("tab") and "tab" not in tool_entry:
                     tool_entry["tab"] = section.get("tab")
                 self._tool_index[tool_id] = tool_entry
+
+    @staticmethod
+    def _slug(text: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "_", str(text or "").strip().lower()).strip("_")
+
+    def _load_plugins(self, json_path: str) -> None:
+        self._plugin_index = {}
+        try:
+            root_dir = Path(json_path).resolve().parents[1]
+            plugins_dir = root_dir / "src" / "plugins"
+            plugins_cfg_path = root_dir / "config" / "plugins.json"
+
+            plugin_settings = {}
+            if plugins_cfg_path.exists():
+                with open(plugins_cfg_path, "r", encoding="utf-8") as handle:
+                    plugin_settings = json.load(handle) or {}
+            if not plugin_settings.get("enabled", True):
+                return
+
+            if not plugins_dir.exists():
+                return
+
+            sections_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
+            for section in self._sections:
+                if not isinstance(section, dict):
+                    continue
+                key = (str(section.get("tab", "")), str(section.get("id", "")))
+                if key[0] and key[1]:
+                    sections_map[key] = section
+            settings_by_id = plugin_settings.get("plugins", {}) if isinstance(plugin_settings, dict) else {}
+
+            for plugin_file in plugins_dir.glob("*_plugin.py"):
+                module_name = f"tool_plugin_{plugin_file.stem}"
+                try:
+                    spec = importlib.util.spec_from_file_location(module_name, plugin_file)
+                    if not spec or not spec.loader:
+                        continue
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    plugin_cls = getattr(module, "ToolPlugin", None)
+                    if not plugin_cls:
+                        logger.warning(f"Plugin missing ToolPlugin class: {plugin_file.name}")
+                        continue
+                    plugin = plugin_cls()
+                except Exception as exc:
+                    logger.warning(f"Plugin load failed ({plugin_file.name}): {exc}")
+                    continue
+
+                plugin_id = getattr(plugin, "id", "")
+                plugin_title = getattr(plugin, "title", "")
+                if not plugin_id or not plugin_title or not hasattr(plugin, "launch"):
+                    logger.warning(f"Plugin contract invalid: {plugin_file.name}")
+                    continue
+
+                plugin_cfg = settings_by_id.get(plugin_id, {})
+                if isinstance(plugin_cfg, dict) and not plugin_cfg.get("enabled", True):
+                    continue
+
+                tab = (plugin_cfg.get("tab") if isinstance(plugin_cfg, dict) else None) or getattr(plugin, "tab", "maintenance")
+                section_id = (plugin_cfg.get("section_id") if isinstance(plugin_cfg, dict) else None) or self._slug(getattr(plugin, "category", "External Tools"))
+                section_title = (plugin_cfg.get("section_title") if isinstance(plugin_cfg, dict) else None) or str(getattr(plugin, "category", "External Tools")).upper()
+                section_description = (plugin_cfg.get("section_description") if isinstance(plugin_cfg, dict) else None) or ""
+                section_icon = (plugin_cfg.get("section_icon") if isinstance(plugin_cfg, dict) else None) or ""
+                order = (plugin_cfg.get("order") if isinstance(plugin_cfg, dict) else None) or 100
+
+                tool_entry = {
+                    "id": plugin_id,
+                    "title": plugin_title,
+                    "icon": getattr(plugin, "icon", ""),
+                    "description": getattr(plugin, "description", ""),
+                    "service": "plugin",
+                    "method": "launch",
+                    "requires_admin": bool(getattr(plugin, "requires_admin", False)),
+                    "external": True,
+                    "download_url": getattr(plugin, "download_url", ""),
+                    "tags": ["external", "plugin"],
+                    "category": getattr(plugin, "category", "External Tools"),
+                    "requires_restart": False,
+                    "risk_level": "safe",
+                    "recommended_frequency": "as_needed",
+                }
+
+                self._plugin_index[plugin_id] = plugin
+                self._tool_index[plugin_id] = tool_entry
+
+                key = (str(tab), str(section_id))
+                if key not in sections_map:
+                    sections_map[key] = {
+                        "id": section_id,
+                        "title": section_title,
+                        "icon": section_icon,
+                        "description": section_description,
+                        "tab": tab,
+                        "tools": [],
+                        "_order": order,
+                    }
+                sections_map[key]["tools"].append(tool_entry)
+                if "_order" not in sections_map[key]:
+                    sections_map[key]["_order"] = order
+
+            plugin_sections = sorted(
+                sections_map.values(),
+                key=lambda s: (int(s.get("_order", 100)), str(s.get("title", "")))
+            )
+            self._sections = []
+            for section in plugin_sections:
+                section.pop("_order", None)
+                self._sections.append(section)
+        except Exception as exc:
+            logger.warning(f"Plugin loading failed: {exc}")
+
+    def _execute_plugin(self, tool_id: str, tool: Dict[str, Any], config_manager) -> Tuple[bool, str]:
+        plugin = self._plugin_index.get(tool_id)
+        if not plugin:
+            return False, f"Plugin not found: {tool_id}"
+        try:
+            result = plugin.launch(config_manager)
+            success, message = self._normalize_result(result)
+            self._record_usage(tool, success, message)
+            self._notify_toast(tool, success, message, config_manager)
+            return success, message
+        except Exception as exc:
+            logger.error(f"Plugin execution failed for {tool_id}: {exc}")
+            message = str(exc)
+            self._record_usage(tool, False, message)
+            self._notify_toast(tool, False, message, config_manager)
+            return False, message
 
     @staticmethod
     def _select_args(tool: Dict[str, Any], handler: Dict[str, Any]) -> List[Any]:
