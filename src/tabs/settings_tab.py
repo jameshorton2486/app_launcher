@@ -321,15 +321,12 @@ class SettingsTab(ctk.CTkScrollableFrame):
         section.pack(fill='x', pady=12)
 
         self.external_tools = {
-            "CCleaner": ("external_tools.ccleaner", "https://www.ccleaner.com/ccleaner/download"),
             "BleachBit": ("external_tools.bleachbit", "https://www.bleachbit.org/download"),
-            "Wise Memory": ("external_tools.wise_memory_cleaner", "https://www.wisecleaner.com/wise-memory-optimizer.html"),
             "TreeSize": ("external_tools.treesize", "https://www.jam-software.com/treesize_free"),
             "Everything": ("external_tools.everything", "https://www.voidtools.com/downloads/"),
             "BCUninstaller": ("external_tools.bcuninstaller", "https://www.bcuninstaller.com/"),
             "CrystalDiskInfo": ("external_tools.crystaldiskinfo", "https://crystalmark.info/en/download/"),
             "HWiNFO": ("external_tools.hwinfo", "https://www.hwinfo.com/download/"),
-            "CPU-Z": ("external_tools.cpuz", "https://www.cpuid.com/softwares/cpu-z.html"),
             "Autoruns": ("external_tools.autoruns", "https://learn.microsoft.com/sysinternals/downloads/autoruns"),
             "Process Lasso": ("external_tools.process_lasso", "https://bitsum.com/processlasso/"),
             "O&O ShutUp10++": ("external_tools.shutup10", "https://www.oo-software.com/en/shutup10"),

@@ -255,68 +255,6 @@ class OptimizationService:
             hive="HKLM"
         )
 
-    # Gaming methods
-    def enable_game_mode(self) -> Tuple[bool, str]:
-        """Enable Game Mode"""
-        return self._set_registry_value(
-            r"SOFTWARE\Microsoft\GameBar",
-            "AutoGameModeEnabled",
-            1,
-            winreg.REG_DWORD,
-            hive="HKCU"
-        )
-
-    def disable_game_mode(self) -> Tuple[bool, str]:
-        """Disable Game Mode"""
-        return self._set_registry_value(
-            r"SOFTWARE\Microsoft\GameBar",
-            "AutoGameModeEnabled",
-            0,
-            winreg.REG_DWORD,
-            hive="HKCU"
-        )
-
-    def enable_hags(self) -> Tuple[bool, str]:
-        """Enable Hardware-Accelerated GPU Scheduling"""
-        return self._set_registry_value(
-            r"SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
-            "HwSchMode",
-            2,
-            winreg.REG_DWORD,
-            hive="HKLM"
-        )
-
-    def disable_hags(self) -> Tuple[bool, str]:
-        """Disable Hardware-Accelerated GPU Scheduling"""
-        return self._set_registry_value(
-            r"SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
-            "HwSchMode",
-            1,
-            winreg.REG_DWORD,
-            hive="HKLM"
-        )
-
-    def disable_vbs(self) -> Tuple[bool, str]:
-        """Disable VBS (warning: reduces system security)"""
-        logger.warning("Disabling VBS reduces protection against kernel-level malware.")
-        return self._set_registry_value(
-            r"SYSTEM\CurrentControlSet\Control\DeviceGuard",
-            "EnableVirtualizationBasedSecurity",
-            0,
-            winreg.REG_DWORD,
-            hive="HKLM"
-        )
-
-    def enable_vbs(self) -> Tuple[bool, str]:
-        """Enable VBS (recommended for security)"""
-        return self._set_registry_value(
-            r"SYSTEM\CurrentControlSet\Control\DeviceGuard",
-            "EnableVirtualizationBasedSecurity",
-            1,
-            winreg.REG_DWORD,
-            hive="HKLM"
-        )
-
     # Power Plan methods
     def get_current_power_plan(self) -> str:
         """Get current power plan name"""

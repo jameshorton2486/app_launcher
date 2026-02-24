@@ -126,8 +126,6 @@ class SettingsDialog(ctk.CTkToplevel):
         # EXTERNAL TOOLS Section
         self.create_section(main_frame, "EXTERNAL TOOLS")
         
-        self.create_path_field(main_frame, "CCleaner:", 'external_tools.ccleaner')
-        self.create_path_field(main_frame, "Wise Memory Cleaner:", 'external_tools.wise_memory_cleaner')
         self.create_path_field(main_frame, "Cursor:", 'external_tools.cursor')
         self.create_path_field(main_frame, "VS Code:", 'external_tools.vscode')
         self.create_path_field(main_frame, "PyCharm:", 'external_tools.pycharm')
@@ -304,8 +302,6 @@ class SettingsDialog(ctk.CTkToplevel):
         
         # Validate external tools (files)
         tool_paths = [
-            ('external_tools.ccleaner', 'CCleaner'),
-            ('external_tools.wise_memory_cleaner', 'Wise Memory Cleaner'),
             ('external_tools.cursor', 'Cursor'),
             ('external_tools.vscode', 'VS Code'),
             ('external_tools.pycharm', 'PyCharm')

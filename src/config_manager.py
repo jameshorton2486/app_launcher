@@ -208,8 +208,6 @@ class ConfigManager:
                 "screenshots_folder": "C:\\Users\\james\\Documents\\Screenshots"
             },
             "external_tools": {
-                "ccleaner": "C:\\Program Files\\CCleaner\\CCleaner64.exe",
-                "wise_memory_cleaner": "C:\\Program Files (x86)\\Wise\\Wise Memory Optimizer\\WiseMemoryOptimizer.exe",
                 "cursor": "C:\\Users\\james\\AppData\\Local\\Programs\\cursor\\Cursor.exe",
                 "vscode": "C:\\Users\\james\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
                 "pycharm": "C:\\Program Files\\JetBrains\\PyCharm\\bin\\pycharm64.exe"
@@ -403,22 +401,6 @@ class ConfigManager:
                     "id": "external_tools",
                     "title": "EXTERNAL TOOLS",
                     "tools": [
-                        {
-                            "id": "open_ccleaner",
-                            "icon": "🧽",
-                            "title": "Open CCleaner",
-                            "subtitle": "",
-                            "tooltip": "Launch CCleaner (configure path in settings)",
-                            "handler": {"service": "cleanup_service", "method": "launch_ccleaner", "args": ["$config_manager"]}
-                        },
-                        {
-                            "id": "open_wise_memory",
-                            "icon": "🧠",
-                            "title": "Open Wise Memory",
-                            "subtitle": "",
-                            "tooltip": "Launch Wise Memory Cleaner (configure path in settings)",
-                            "handler": {"service": "cleanup_service", "method": "launch_wise_memory_cleaner", "args": ["$config_manager"]}
-                        },
                         {
                             "id": "reset_ms_store",
                             "icon": "🏪",
