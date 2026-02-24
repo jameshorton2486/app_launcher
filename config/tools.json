@@ -816,10 +816,10 @@
       ]
     },
     {
-      "id": "power_plans",
-      "title": "POWER PLAN",
-      "icon": "",
-      "description": "Switch between Windows power plans. Higher performance uses more energy.",
+      "id": "performance",
+      "title": "PERFORMANCE",
+      "icon": "⚡",
+      "description": "Stable performance controls for heavy development workloads.",
       "tab": "optimization",
       "tools": [
         {
@@ -837,18 +837,18 @@
             "power",
             "admin"
           ],
-          "category": "Power Plan",
+          "category": "Performance",
           "requires_restart": false,
-          "detailed_description": "Switches to the Balanced power plan for a mix of performance and energy efficiency. This is the default Windows recommendation.",
+          "detailed_description": "Switches to the Balanced power plan for a mix of performance and energy efficiency.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "For everyday use with a balance of power and efficiency."
+          "when_to_use": "For everyday development and normal workload."
         },
         {
           "id": "high_performance_plan",
           "title": "High Performance",
           "icon": "⚡",
-          "description": "Maximum CPU performance for desktops and gaming",
+          "description": "Higher CPU performance for heavy build and test runs",
           "service": "optimization",
           "method": "set_power_plan",
           "method_args": [
@@ -860,35 +860,36 @@
             "performance",
             "admin"
           ],
-          "category": "Power Plan",
+          "category": "Performance",
           "requires_restart": false,
-          "detailed_description": "Switches to High Performance power plan for maximum CPU performance. This increases power usage to reduce throttling.",
+          "detailed_description": "Switches to High Performance to reduce throttling during sustained workloads.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When you want maximum performance on a plugged-in system."
+          "when_to_use": "When running large builds, CI jobs, or local test suites."
         },
         {
-          "id": "ultimate_performance_plan",
-          "title": "Ultimate Performance",
-          "icon": "🔥",
-          "description": "Hidden maximum performance plan for workstations",
-          "service": "optimization",
-          "method": "set_power_plan",
+          "id": "process_lasso",
+          "title": "Process Lasso",
+          "icon": "🎛",
+          "description": "Process priority and CPU affinity manager",
+          "service": "external",
+          "method": "launch_tool",
           "method_args": [
-            "ultimate_performance"
+            "process_lasso"
           ],
-          "requires_admin": true,
+          "requires_admin": false,
+          "external": true,
+          "download_url": "https://bitsum.com/processlasso/",
           "tags": [
-            "power",
-            "performance",
-            "admin"
+            "external",
+            "performance"
           ],
-          "category": "Power Plan",
+          "category": "Performance",
           "requires_restart": false,
-          "detailed_description": "Enables the Ultimate Performance plan for workstation-level performance. This uses more energy to minimize power-saving latency.",
+          "detailed_description": "Launches Process Lasso for process priority and affinity control.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "On desktops where power use is not a concern."
+          "when_to_use": "When tuning priority behavior under high CPU load."
         },
         {
           "id": "power_options",
@@ -901,20 +902,20 @@
           "tags": [
             "power"
           ],
-          "category": "Power Plan",
+          "category": "Performance",
           "requires_restart": false,
-          "detailed_description": "Opens the Windows Power Options control panel for advanced power settings. This is informational and does not change settings by itself.",
+          "detailed_description": "Opens the Windows Power Options control panel for advanced power settings.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When you want to review or change power settings."
+          "when_to_use": "When reviewing power behavior for development workloads."
         }
       ]
     },
     {
-      "id": "external_tools",
-      "title": "EXTERNAL TOOLS",
-      "icon": "🔧",
-      "description": "Launch third-party maintenance tools. Configure paths in Settings.",
+      "id": "system_health",
+      "title": "SYSTEM HEALTH",
+      "icon": "🩺",
+      "description": "System stability and health tooling for development machines.",
       "tab": "maintenance",
       "tools": [
         {
@@ -935,60 +936,12 @@
             "cleanup",
             "privacy"
           ],
-          "category": "External Tools",
+          "category": "System Health",
           "requires_restart": false,
-          "detailed_description": "Launches BleachBit for privacy-focused cleanup and disk space reclamation. This tool is external to App Launcher.",
+          "detailed_description": "Launches BleachBit for cleanup and privacy-focused cache management.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When you want a privacy-focused cleaner."
-        },
-        {
-          "id": "treesize",
-          "title": "TreeSize Free",
-          "icon": "📊",
-          "description": "Visual disk space analyzer - find large files",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": [
-            "treesize"
-          ],
-          "requires_admin": false,
-          "external": true,
-          "download_url": "https://www.jam-software.com/treesize_free",
-          "tags": [
-            "external",
-            "disk"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches TreeSize Free to visualize disk usage and find large files. This helps identify where storage is being used.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When investigating disk space usage."
-        },
-        {
-          "id": "everything",
-          "title": "Everything Search",
-          "icon": "🔍",
-          "description": "Instant file search (much faster than Windows)",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": [
-            "everything"
-          ],
-          "requires_admin": false,
-          "external": true,
-          "download_url": "https://www.voidtools.com/downloads/",
-          "tags": [
-            "external",
-            "search"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches Everything Search for instant file lookup. This tool indexes files for extremely fast searching.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When you need to locate files quickly."
+          "when_to_use": "When reclaiming disk space or clearing stale caches."
         },
         {
           "id": "bcuninstaller",
@@ -1007,12 +960,37 @@
             "external",
             "cleanup"
           ],
-          "category": "External Tools",
+          "category": "System Health",
           "requires_restart": false,
-          "detailed_description": "Launches BCUninstaller for thorough software removal and leftover cleanup. This is a third-party uninstaller.",
+          "detailed_description": "Launches BCUninstaller for software removal and leftover cleanup.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When uninstalling apps with leftover files."
+          "when_to_use": "When uninstalling software cleanly."
+        },
+        {
+          "id": "autoruns",
+          "title": "Autoruns",
+          "icon": "🚀",
+          "description": "Microsoft Sysinternals startup manager",
+          "service": "external",
+          "method": "launch_tool",
+          "method_args": [
+            "autoruns"
+          ],
+          "requires_admin": true,
+          "external": true,
+          "download_url": "https://learn.microsoft.com/sysinternals/downloads/autoruns",
+          "tags": [
+            "external",
+            "startup",
+            "admin"
+          ],
+          "category": "System Health",
+          "requires_restart": false,
+          "detailed_description": "Launches Autoruns to inspect and control startup entries.",
+          "risk_level": "safe",
+          "recommended_frequency": "as_needed",
+          "when_to_use": "When troubleshooting startup slowdowns."
         },
         {
           "id": "crystaldiskinfo",
@@ -1032,86 +1010,79 @@
             "disk",
             "info"
           ],
-          "category": "External Tools",
+          "category": "System Health",
           "requires_restart": false,
-          "detailed_description": "Launches CrystalDiskInfo to view disk health and SMART data. This helps monitor drive health.",
+          "detailed_description": "Launches CrystalDiskInfo for drive health and SMART diagnostics.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When checking drive health and SMART stats."
-        },
+          "when_to_use": "When checking drive reliability and health."
+        }
+      ]
+    },
+    {
+      "id": "storage_files",
+      "title": "STORAGE & FILES",
+      "icon": "🗂",
+      "description": "Storage analysis and fast file lookup.",
+      "tab": "maintenance",
+      "tools": [
         {
-          "id": "hwinfo",
-          "title": "HWiNFO",
-          "icon": "🖥",
-          "description": "Comprehensive hardware monitoring",
+          "id": "treesize",
+          "title": "TreeSize Free",
+          "icon": "📊",
+          "description": "Visual disk space analyzer - find large files",
           "service": "external",
           "method": "launch_tool",
           "method_args": [
-            "hwinfo"
+            "treesize"
           ],
           "requires_admin": false,
           "external": true,
-          "download_url": "https://www.hwinfo.com/download/",
+          "download_url": "https://www.jam-software.com/treesize_free",
           "tags": [
             "external",
-            "info"
+            "disk"
           ],
-          "category": "External Tools",
+          "category": "Storage & Files",
           "requires_restart": false,
-          "detailed_description": "Launches HWiNFO for detailed hardware monitoring. Useful for diagnostics and performance tuning.",
+          "detailed_description": "Launches TreeSize Free to analyze folder size and identify large files.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When you need detailed hardware information."
+          "when_to_use": "When diagnosing disk usage growth."
         },
         {
-          "id": "autoruns",
-          "title": "Autoruns",
-          "icon": "🚀",
-          "description": "Microsoft Sysinternals comprehensive startup manager",
+          "id": "everything",
+          "title": "Everything Search",
+          "icon": "🔍",
+          "description": "Instant file search (much faster than Windows)",
           "service": "external",
           "method": "launch_tool",
           "method_args": [
-            "autoruns"
-          ],
-          "requires_admin": true,
-          "external": true,
-          "download_url": "https://learn.microsoft.com/sysinternals/downloads/autoruns",
-          "tags": [
-            "external",
-            "startup",
-            "admin"
-          ],
-          "category": "External Tools",
-          "requires_restart": false,
-          "detailed_description": "Launches Autoruns to manage startup entries and services. This is a powerful diagnostic tool.",
-          "risk_level": "safe",
-          "recommended_frequency": "as_needed",
-          "when_to_use": "When troubleshooting startup programs."
-        },
-        {
-          "id": "process_lasso",
-          "title": "Process Lasso",
-          "icon": "🎛",
-          "description": "Process priority and CPU affinity manager",
-          "service": "external",
-          "method": "launch_tool",
-          "method_args": [
-            "process_lasso"
+            "everything"
           ],
           "requires_admin": false,
           "external": true,
-          "download_url": "https://bitsum.com/processlasso/",
+          "download_url": "https://www.voidtools.com/downloads/",
           "tags": [
             "external",
-            "performance"
+            "search"
           ],
-          "category": "External Tools",
+          "category": "Storage & Files",
           "requires_restart": false,
-          "detailed_description": "Launches Process Lasso for managing process priorities and CPU affinity. This can help performance tuning.",
+          "detailed_description": "Launches Everything Search for near-instant file discovery.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When optimizing process priorities."
-        },
+          "when_to_use": "When locating files in large codebases."
+        }
+      ]
+    },
+    {
+      "id": "privacy_tools",
+      "title": "PRIVACY",
+      "icon": "🔒",
+      "description": "Privacy management tools.",
+      "tab": "maintenance",
+      "tools": [
         {
           "id": "shutup10",
           "title": "O&O ShutUp10++",
@@ -1129,12 +1100,12 @@
             "external",
             "privacy"
           ],
-          "category": "External Tools",
+          "category": "Privacy",
           "requires_restart": false,
-          "detailed_description": "Launches O&O ShutUp10++ for privacy configuration. This provides detailed privacy controls.",
+          "detailed_description": "Launches O&O ShutUp10++ for Windows privacy configuration.",
           "risk_level": "safe",
           "recommended_frequency": "as_needed",
-          "when_to_use": "When adjusting Windows privacy settings."
+          "when_to_use": "When reviewing Windows privacy settings."
         }
       ]
     },

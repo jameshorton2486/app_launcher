@@ -49,7 +49,9 @@ class CollapsibleSection(ctk.CTkFrame):
             "system_repair": COLORS.get("color_repair", COLORS['warning']),
             "privacy": COLORS.get("color_privacy", COLORS['accent_secondary']),
             "security": COLORS.get("color_security", COLORS['error']),
-            "external_tools": COLORS.get("color_external", COLORS['info']),
+            "system_health": COLORS.get("color_external", COLORS['info']),
+            "storage_files": COLORS.get("color_memory", COLORS['info']),
+            "privacy_tools": COLORS.get("color_privacy", COLORS['accent_secondary']),
         }
         section_id = getattr(self, '_section_id', '')
         section_color = category_colors.get(section_id, COLORS['accent_primary'])
@@ -274,7 +276,9 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             "system_repair": COLORS.get("color_repair", COLORS['warning']),
             "privacy": COLORS.get("color_privacy", COLORS['accent_secondary']),
             "security": COLORS.get("color_security", COLORS['error']),
-            "external_tools": COLORS.get("color_external", COLORS['info']),
+            "system_health": COLORS.get("color_external", COLORS['info']),
+            "storage_files": COLORS.get("color_memory", COLORS['info']),
+            "privacy_tools": COLORS.get("color_privacy", COLORS['accent_secondary']),
         }
         
         # Get section color from parent section
@@ -477,8 +481,8 @@ class MaintenanceTab(ctk.CTkScrollableFrame):
             "Network: Network-related maintenance\n"
             "System Repair: Advanced repair tools (may take time)\n"
             "Privacy: Privacy and data protection tools\n"
-            "Security: Security-related maintenance\n"
-            "External Tools: Launch third-party utilities\n\n"
+            "System Health: Stability and startup diagnostics\n"
+            "Storage & Files: Disk analysis and file search\n\n"
             "🔒 = Requires Administrator privileges\n"
             "Tools are color-coded by category for easy identification."
         )

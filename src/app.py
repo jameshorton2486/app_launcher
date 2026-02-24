@@ -391,7 +391,7 @@ class AppLauncher(ctk.CTk):
         self._build_menu()
         self._bind_shortcuts()
 
-        initial_view = "Dashboard" if "Dashboard" in self._enabled_tabs else (self._enabled_tabs[0] if self._enabled_tabs else None)
+        initial_view = "Projects" if "Projects" in self._enabled_tabs else (self._enabled_tabs[0] if self._enabled_tabs else None)
         if initial_view:
             self.show_view(initial_view)
         ToastManager.set_root(self)
