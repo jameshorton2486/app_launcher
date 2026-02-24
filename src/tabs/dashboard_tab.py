@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 
 from src.theme import COLORS
-from src.utils.constants import TOOLS_FILE
+from src.utils.constants import TOOLS_FILE, EXTERNAL_TOOL_PATHS_FILE
 from src.components.button_3d import Button3D, BUTTON_COLORS
 from src.components.card_frame import CardFrame
 from src.utils.tool_registry import ToolRegistry
@@ -526,7 +526,7 @@ class DashboardTab(ctk.CTkScrollableFrame):
 
         candidates = []
         try:
-            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "external_tool_paths.json")
+            config_path = EXTERNAL_TOOL_PATHS_FILE
             if os.path.exists(config_path):
                 import json
                 with open(config_path, "r", encoding="utf-8") as handle:

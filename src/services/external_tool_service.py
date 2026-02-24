@@ -7,6 +7,7 @@ import os
 import subprocess
 import json
 from typing import Tuple
+from src.utils.constants import EXTERNAL_TOOL_PATHS_FILE
 
 # Try to import logger
 try:
@@ -51,11 +52,7 @@ class ExternalToolService:
         return None, None
 
     def _resolve_from_registry(self, tool_name: str) -> str:
-        config_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "config",
-            "external_tool_paths.json"
-        )
+        config_path = EXTERNAL_TOOL_PATHS_FILE
         if not os.path.exists(config_path):
             return ""
 

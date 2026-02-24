@@ -34,6 +34,7 @@ from src.utils.system_tray import start_tray_icon
 from src.utils.startup_manager import StartupManager
 from src.utils.hotkey_manager import HotkeyManager
 from src.utils.logger import logger
+from src.utils.constants import resource_path
 
 SIDEBAR_WIDTH_EXPANDED = 240
 SIDEBAR_WIDTH_COLLAPSED = 72
@@ -326,8 +327,7 @@ class AppLauncher(ctk.CTk):
     def _set_window_icon(self):
         """Set window icon if available"""
         try:
-            icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                                    'assets', 'icons', 'app_icon.ico')
+            icon_path = resource_path('assets', 'icons', 'app_icon.ico')
             if os.path.exists(icon_path):
                 self.iconbitmap(icon_path)
                 logger.debug("Window icon set")
