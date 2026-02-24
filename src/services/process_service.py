@@ -20,11 +20,26 @@ except ImportError:
 
 class ProcessService:
     """Service for launching processes and opening files"""
+
+    SAFE_EXECUTABLE_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".py"}
     
     @staticmethod
     def escape_powershell_path(path: str) -> str:
         """Escape a path for use in PowerShell commands"""
         return path.replace("'", "''")
+
+    @staticmethod
+    def _is_safe_command_fragment(command: str) -> bool:
+        text = str(command or "")
+        forbidden = [";", "&", "|", ">", "<", "\n", "\r"]
+        return not any(token in text for token in forbidden)
+
+    @classmethod
+    def _is_safe_executable_path(cls, path: str) -> bool:
+        if not path or not os.path.isfile(path):
+            return False
+        ext = os.path.splitext(path)[1].lower()
+        return ext in cls.SAFE_EXECUTABLE_EXTENSIONS
     
     def launch_python_script(self, path: str, script: str) -> Tuple[bool, str]:
         """
@@ -71,6 +86,9 @@ class ProcessService:
             Tuple of (success, message)
         """
         try:
+            if not self._is_safe_command_fragment(command):
+                logger.warning("Blocked unsafe npm command fragment: %s", command)
+                return False, "Unsafe npm command blocked"
             folder_escaped = self.escape_powershell_path(path)
             cmd = [
                 'powershell.exe',
@@ -137,6 +155,9 @@ class ProcessService:
         try:
             if not os.path.exists(path):
                 return False, f"Executable not found: {path}"
+            if not self._is_safe_executable_path(path):
+                logger.warning("Blocked unsafe executable path: %s", path)
+                return False, "Unsafe executable path blocked"
             
             subprocess.Popen([path], cwd=os.path.dirname(path), creationflags=subprocess.CREATE_NO_WINDOW)
             logger.info(f"Launched executable: {path}")
@@ -357,6 +378,8 @@ Set WshShell = Nothing''')
     def open_terminal(self, folder_path: str) -> bool:
         """Open PowerShell in project directory"""
         try:
+            if not os.path.isdir(folder_path):
+                return False
             terminal_path = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe")
             if os.path.exists(terminal_path):
                 subprocess.Popen(
@@ -379,8 +402,18 @@ Set WshShell = Nothing''')
             folder_path: Project folder path
             config_manager: ConfigManager instance
         """
+        # Backward compatibility: older callers pass (folder_path, ide_name, config_manager).
+        if os.path.isdir(ide_name) and isinstance(folder_path, str):
+            ide_name, folder_path = folder_path, ide_name
+
+        if not os.path.isdir(folder_path):
+            return False
+
         ide_path = config_manager.get_setting(f'external_tools.{ide_name}', '')
         if not ide_path or not os.path.exists(ide_path):
+            return False
+        if not self._is_safe_executable_path(ide_path):
+            logger.warning("Blocked unsafe IDE path: %s", ide_path)
             return False
         
         try:
@@ -393,6 +426,9 @@ Set WshShell = Nothing''')
     def open_url(self, url: str) -> bool:
         """Open URL in default browser"""
         try:
+            if not url or not str(url).startswith(("http://", "https://")):
+                logger.warning("Blocked non-http URL: %s", url)
+                return False
             import webbrowser
             webbrowser.open(url)
             return True

@@ -21,6 +21,8 @@ except ImportError:
 class ExternalToolService:
     """Service for launching external tools"""
 
+    SAFE_EXECUTABLE_EXTENSIONS = {".exe", ".bat", ".cmd"}
+
     def __init__(self, config_manager):
         self.config_manager = config_manager
 
@@ -72,6 +74,13 @@ class ExternalToolService:
     @staticmethod
     def _start_process(path: str, tool_name: str) -> Tuple[bool, str]:
         try:
+            if not os.path.isfile(path):
+                logger.warning("Blocked non-file tool path for %s: %s", tool_name, path)
+                return False, f"{tool_name} path is invalid"
+            ext = os.path.splitext(path)[1].lower()
+            if ext not in ExternalToolService.SAFE_EXECUTABLE_EXTENSIONS:
+                logger.warning("Blocked unsafe tool extension for %s: %s", tool_name, path)
+                return False, f"{tool_name} path has unsupported executable type"
             subprocess.Popen([path], creationflags=subprocess.CREATE_NO_WINDOW)
             return True, f"{tool_name} launched"
         except Exception as exc:
