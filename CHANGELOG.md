@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.2.0] - 2026-02-25
+
+### Changed
+- Refactored `config/tools.json` through phases 0-9 for a cleaner, task-focused tool catalog.
+- Reduced launcher-visible tools to 29 core actions across 7 sections.
+- Simplified Maintenance and Optimization layouts to prioritize frequent workflows.
+
+### Added
+- Added plugin architecture support for external tools in the registry flow.
+- Added packaging-safe resource path resolution to improve PyInstaller/runtime compatibility.
+- Added subprocess launch path validation hardening for safer external command execution.
+
+### Fixed
+- Corrected registry integrity issues after refactor by validating IDs and section indexing.
+- Trimmed optimization/performance tools to dev-focused controls only, removing redundant toggles.
+
+### Tests
+- Added regression tests for refactor toolset shape and performance section membership.
+
 ## [2.1.0] - 2026-02-06
 
 ### Fixed
